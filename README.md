@@ -1,6 +1,6 @@
 # タイ移住生活費シミュレーター
 
-by Life Spending Designer
+by Life Runway
 
 タイ移住・長期滞在を考える人が、月額生活費と生活バランスを概算するための Streamlit アプリです。
 

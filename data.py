@@ -5,7 +5,7 @@ Streamlit や計算ロジックには依存しません。
 """
 
 APP_TITLE = "タイ移住生活費シミュレーター"
-APP_SUBTITLE = "by Life Spending Designer"
+APP_SUBTITLE = "by Life Runway"
 
 # ---------------------------------------------------------------------------
 # 年齢別の医療保険料（月額・THB）
