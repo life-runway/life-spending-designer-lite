@@ -67,10 +67,17 @@ def compute_scores(
     reserve_thb: float,
     fixed_funded_ratio: float,
     fixed_total_thb: float,
+    reserve_in_scope: bool = True,
 ) -> dict:
     """レーダーチャート用の5指標スコア（0〜100）を返す。
 
     各費目の希望額に対する充足率を基本に算出する。
+
+    reserve_in_scope:
+        予備費を Stability の評価に含めるかどうか。
+        「予算から試算」モードのように予算内の余剰を評価する場面では True。
+        「生活から試算」モードは希望額の積み上げで予備費の概念がないため
+        False とし、その分の重みを固定費確保・医療保険に再配分する。
     """
 
     def f(key: str) -> float:
@@ -110,16 +117,26 @@ def compute_scores(
     util_ratio = fixed_funded_ratio if util_thb > 0 else 1.0
     living_env = (rent_ratio + util_ratio + daily_goods_ratio) / 3 * 100
 
-    # Stability：固定費の確保・医療保険・予備費
+    # Stability：固定費の確保・医療保険・（予算モードのみ）予備費
     insurance_component = 1.0 if has_insurance else 0.3
-    # 予備費：固定費の半月分あれば満点扱い
-    if fixed_total_thb > 0:
-        reserve_component = min(max(reserve_thb, 0.0) / (fixed_total_thb * 0.5), 1.0)
+    if reserve_in_scope:
+        # 予備費：固定費の半月分あれば満点扱い
+        if fixed_total_thb > 0:
+            reserve_component = min(max(reserve_thb, 0.0) / (fixed_total_thb * 0.5), 1.0)
+        else:
+            reserve_component = min(max(reserve_thb, 0.0) / 5000.0, 1.0)
+        stability = (
+            fixed_funded_ratio * 0.5
+            + insurance_component * 0.25
+            + reserve_component * 0.25
+        ) * 100
     else:
-        reserve_component = min(max(reserve_thb, 0.0) / 5000.0, 1.0)
-    stability = (
-        fixed_funded_ratio * 0.5 + insurance_component * 0.25 + reserve_component * 0.25
-    ) * 100
+        # 生活から試算モード：予備費の概念がないため、予備費分の重みを
+        # 固定費確保・医療保険へ再配分する。希望固定費が全額確保され、
+        # 医療保険にも入っていれば Stability は100点になる。
+        stability = (
+            fixed_funded_ratio * 0.65 + insurance_component * 0.35
+        ) * 100
 
     return {
         "Life Satisfaction": round(life_satisfaction, 1),
@@ -167,6 +184,7 @@ def simulate_from_lifestyle(
         reserve_thb=0.0,
         fixed_funded_ratio=1.0,
         fixed_total_thb=fixed_total,
+        reserve_in_scope=False,
     )
 
     return {

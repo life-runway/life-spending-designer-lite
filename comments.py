@@ -32,12 +32,17 @@ CAR_COMMENT_LIFESTYLE = (
     "毎月の固定的な支出になるため、固定費の重さもあわせて確認してください。"
 )
 
+# 「予算から試算」モード専用の最小生活コメント。
+# 予算モードでは lifestyle_style_comment を出さないため、ここで最小生活の注意を補う。
+# 趣旨は LIFESTYLE_STYLE_COMMENTS["最小生活"] と近いが、両者は同時に表示されない
+# （lifestyle モードは下の LIFESTYLE_STYLE_COMMENTS、budget モードはこの定数を使う）。
 MINIMAL_COMMENT = (
     "最小生活は、かなり支出を抑えた条件です。長期滞在では医療費、"
     "帰国費用、家電故障、為替変動などへの余力に注意が必要です。"
 )
 
-# 生活スタイル別の説明コメント
+# 生活スタイル別の説明コメント（「生活から試算」モードで使用）。
+# budget モードでは使わず、代わりに budget_fit_comment / MINIMAL_COMMENT を使う。
 LIFESTYLE_STYLE_COMMENTS = {
     "最小生活": (
         "かなり支出を抑えた生活設計です。外食・交際・趣味に回せる金額は限られるため、"

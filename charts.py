@@ -42,13 +42,14 @@ def make_radar_chart(scores: dict) -> go.Figure:
     r = values + [values[0]]
     theta = RADAR_AXES + [RADAR_AXES[0]]
 
-    # ダークモードでも視認しやすい配色（落ち着いたトーンを維持）
-    line_color = "#38BDF8"
-    fill_color = "rgba(56, 189, 248, 0.28)"
-    grid_color = "rgba(255, 255, 255, 0.28)"
-    axis_line_color = "rgba(255, 255, 255, 0.35)"
-    tick_font_color = "rgba(255, 255, 255, 0.75)"
-    label_font_color = "rgba(255, 255, 255, 0.85)"
+    # Streamlit デフォルト（ライトテーマ）で確実に読めることを優先した配色。
+    # 線・塗りは視認性のあるブルー、グリッド・軸・文字は濃いグレー系。
+    line_color = "#2563EB"
+    fill_color = "rgba(37, 99, 235, 0.22)"
+    grid_color = "rgba(0, 0, 0, 0.18)"
+    axis_line_color = "rgba(0, 0, 0, 0.28)"
+    tick_font_color = "rgba(0, 0, 0, 0.65)"
+    label_font_color = "rgba(0, 0, 0, 0.80)"
 
     fig = go.Figure()
     fig.add_trace(
@@ -77,7 +78,7 @@ def make_radar_chart(scores: dict) -> go.Figure:
                 tickfont=dict(size=12, color=tick_font_color),
             ),
             angularaxis=dict(
-                gridcolor="rgba(255, 255, 255, 0.25)",
+                gridcolor="rgba(0, 0, 0, 0.15)",
                 linecolor=axis_line_color,
                 tickfont=dict(size=13, color=label_font_color),
             ),

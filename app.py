@@ -202,10 +202,9 @@ else:  # 車＋バイクあり
 st.caption(data.VEHICLE_NOTE)
 
 
-# 年齢別の医療費自己負担
-out_of_pocket = data.get_medical_out_of_pocket(age)
-
 # 固定・準固定費を構築（両方の試算で共通利用）
+# 医療費自己負担は build_fixed_costs が年齢から内部算出するため、
+# その結果を再利用して二重 lookup を避ける。
 fixed_costs = simulator.build_fixed_costs(
     age=age,
     rent=rent,
@@ -215,6 +214,7 @@ fixed_costs = simulator.build_fixed_costs(
     other=other,
     vehicle_thb=vehicle_thb,
 )
+out_of_pocket = fixed_costs["医療費自己負担"]
 
 
 # ---------------------------------------------------------------------------
@@ -384,10 +384,14 @@ def show_budget_result():
         "日常生活費充足率", f"{bresult['fulfillment_ratio'] * 100:.0f}%"
     )
 
-    if bresult["remaining_after_fixed_thb"] < 0:
+    fixed_shortfall = bresult["remaining_after_fixed_thb"] < 0
+    if fixed_shortfall:
         st.warning(
-            "月額予算が固定・準固定費を下回っています。"
-            "日常生活費にまわせるお金がありません。家賃や車などの見直しが必要です。"
+            "この予算では、固定費の希望額を全額確保できません。"
+            "月額予算が固定・準固定費の合計を下回っているため、"
+            "日常生活費にまわせるお金がありません。家賃や車などの見直しが必要です。\n\n"
+            "下の固定・準固定費の表は「希望ベースの固定費」であり、"
+            "実際にこの予算で支払える額ではない点にご注意ください。"
         )
 
     st.metric("予備費として残るお金（円）", jpy(bresult["reserve_jpy"]))
@@ -425,6 +429,10 @@ def show_budget_result():
         st.dataframe(
             render_fixed_table(bresult["fixed_costs"]), hide_index=True, width="stretch"
         )
+        if fixed_shortfall:
+            st.caption(
+                "この表は希望額ベースの固定費です。現在の予算では全額を確保できません。"
+            )
     with daily_col:
         st.markdown("**日常生活費の配分**")
         alloc_rows = []
