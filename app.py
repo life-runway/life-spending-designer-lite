@@ -226,10 +226,29 @@ def render_fixed_table(fixed: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def current_theme_type() -> str:
+    """現在のテーマ種別（"light"/"dark"）を返す。取得できなければ "light"。"""
+    try:
+        theme_type = st.context.theme.type
+    except Exception:
+        theme_type = None
+    return theme_type if theme_type in ("light", "dark") else "light"
+
+
+# レーダーチャートは「見るだけ」の表示。モバイルで触っても動かないよう操作を抑制する。
+RADAR_CHART_CONFIG = {
+    "displayModeBar": False,
+    "scrollZoom": False,
+    "doubleClick": False,
+    "staticPlot": True,
+}
+
+
 def render_balance_section(scores: dict):
     """生活バランス：横幅いっぱいの大きめレーダーチャート。"""
     st.markdown("#### 生活バランス")
-    st.plotly_chart(charts.make_radar_chart(scores), width="stretch")
+    fig = charts.make_radar_chart(scores, theme=current_theme_type())
+    st.plotly_chart(fig, width="stretch", config=RADAR_CHART_CONFIG)
 
 
 def render_radar_guide_section():

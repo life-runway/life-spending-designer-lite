@@ -36,20 +36,35 @@ RADAR_DESCRIPTIONS = {
 }
 
 
-def make_radar_chart(scores: dict) -> go.Figure:
-    """5指標スコア（0〜100）からレーダーチャートを作成する。"""
+def make_radar_chart(scores: dict, theme: str | None = None) -> go.Figure:
+    """5指標スコア（0〜100）からレーダーチャートを作成する。
+
+    theme: "dark" でダークテーマ向けの白系、それ以外（"light"/None）は
+        ライトテーマ向けの濃いグレー系の配色を使う。線・塗りは両テーマで
+        視認できるブルーで共通。
+    """
     values = [float(scores.get(axis, 0)) for axis in RADAR_AXES]
     r = values + [values[0]]
     theta = RADAR_AXES + [RADAR_AXES[0]]
 
-    # Streamlit デフォルト（ライトテーマ）で確実に読めることを優先した配色。
-    # 線・塗りは視認性のあるブルー、グリッド・軸・文字は濃いグレー系。
-    line_color = "#2563EB"
-    fill_color = "rgba(37, 99, 235, 0.22)"
-    grid_color = "rgba(0, 0, 0, 0.18)"
-    axis_line_color = "rgba(0, 0, 0, 0.28)"
-    tick_font_color = "rgba(0, 0, 0, 0.65)"
-    label_font_color = "rgba(0, 0, 0, 0.80)"
+    # 線・塗りは両テーマ共通（暗背景・明背景どちらでも視認できるブルー）
+    line_color = "#3B82F6"
+    fill_color = "rgba(59, 130, 246, 0.25)"
+
+    if theme == "dark":
+        # ダークテーマ：白系でラベル・目盛り・グリッドを浮かせる
+        grid_color = "rgba(255, 255, 255, 0.25)"
+        angular_grid_color = "rgba(255, 255, 255, 0.22)"
+        axis_line_color = "rgba(255, 255, 255, 0.35)"
+        tick_font_color = "rgba(255, 255, 255, 0.75)"
+        label_font_color = "rgba(255, 255, 255, 0.85)"
+    else:
+        # ライトテーマ：濃いグレー系（白背景で読める）
+        grid_color = "rgba(0, 0, 0, 0.18)"
+        angular_grid_color = "rgba(0, 0, 0, 0.15)"
+        axis_line_color = "rgba(0, 0, 0, 0.28)"
+        tick_font_color = "rgba(0, 0, 0, 0.65)"
+        label_font_color = "rgba(0, 0, 0, 0.80)"
 
     fig = go.Figure()
     fig.add_trace(
@@ -78,7 +93,7 @@ def make_radar_chart(scores: dict) -> go.Figure:
                 tickfont=dict(size=12, color=tick_font_color),
             ),
             angularaxis=dict(
-                gridcolor="rgba(0, 0, 0, 0.15)",
+                gridcolor=angular_grid_color,
                 linecolor=axis_line_color,
                 tickfont=dict(size=13, color=label_font_color),
             ),
@@ -89,5 +104,7 @@ def make_radar_chart(scores: dict) -> go.Figure:
         margin=dict(l=90, r=90, t=80, b=70),
         height=500,
         autosize=True,
+        # タップ／ドラッグでチャートが動いたように見えないよう操作を固定
+        dragmode=False,
     )
     return fig
