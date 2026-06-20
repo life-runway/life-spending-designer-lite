@@ -5,6 +5,8 @@ STEP 2 で試算方法を選び、STEP 3 で選んだ方法の結果のみを表
 1ページ内ステップ式の動線。
 """
 
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
@@ -12,6 +14,47 @@ import charts
 import comments
 import data
 import simulator
+
+
+# 参考画像（部屋タイプ）の格納先
+ROOM_SAMPLES_DIR = Path(__file__).parent / "assets" / "room_samples"
+
+# 部屋タイプと家賃の目安（住まい固定費の参考情報。計算には使わない）
+ROOM_TYPES = [
+    {
+        "image": "studio.jpg",
+        "name": "スタジオ",
+        "size": "約25〜35㎡",
+        "pattaya": "12,000〜20,000THB/月",
+        "bangkok": "12,000〜25,000THB/月",
+        "desc": (
+            "ベッド・ソファ・簡易キッチンが一体になったコンパクトな部屋。"
+            "単身で費用を抑えたい人向け。"
+        ),
+    },
+    {
+        "image": "one_bedroom.jpg",
+        "name": "1ベッドルーム",
+        "size": "約35〜55㎡",
+        "pattaya": "20,000〜30,000THB/月",
+        "bangkok": "25,000〜45,000THB/月",
+        "desc": (
+            "リビングと寝室が分かれた標準的な部屋。"
+            "単身で長期滞在する人に使いやすい選択肢。"
+        ),
+    },
+    {
+        "image": "two_bedroom.jpg",
+        "name": "2ベッドルーム",
+        "size": "約60〜85㎡",
+        "pattaya": "35,000〜55,000THB/月",
+        "bangkok": "50,000〜90,000THB/月",
+        "desc": (
+            "寝室が2つあり、リビングにも余裕のある部屋。"
+            "夫婦、来客がある人、荷物が多い人向け。"
+        ),
+    },
+]
 
 
 st.set_page_config(page_title=data.APP_TITLE, layout="wide")
@@ -108,6 +151,55 @@ rent = st.slider(
     key="rent",
 )
 st.caption("賃貸は家賃、購入済みコンドミニアムは管理費を入力してください。")
+
+
+def render_room_card(room: dict):
+    """部屋タイプカード（画像＋目安）を描画する。画像が無くても落ちない。"""
+    image_path = ROOM_SAMPLES_DIR / room["image"]
+    if image_path.exists():
+        try:
+            st.image(str(image_path), width="stretch")
+        except Exception:
+            st.caption("（画像を表示できませんでした）")
+    else:
+        st.caption("（画像が見つかりませんでした）")
+    st.markdown(f"**{room['name']}**")
+    st.markdown(
+        f"{room['size']}  \n"
+        f"パタヤ：{room['pattaya']}  \n"
+        f"バンコク：{room['bangkok']}"
+    )
+    st.caption(room["desc"])
+
+
+with st.expander("部屋タイプと家賃の目安を見る"):
+    st.write("タイの家具付きコンドを想定した、住まい固定費の参考です。")
+
+    cols = st.columns(3)
+    for col, room in zip(cols, ROOM_TYPES):
+        with col:
+            render_room_card(room)
+
+    st.write("")
+    rent_guide_df = pd.DataFrame(
+        [
+            {
+                "部屋タイプ": r["name"],
+                "広さの目安": r["size"],
+                "パタヤ家賃目安": r["pattaya"],
+                "バンコク家賃目安": r["bangkok"],
+            }
+            for r in ROOM_TYPES
+        ]
+    )
+    st.dataframe(rent_guide_df, hide_index=True, width="stretch")
+
+    st.caption(
+        "家賃目安は、2026年6月時点で確認したHipflat、PropertyScoutなどの"
+        "不動産ポータル掲載情報を参考にしています。\n\n"
+        "掲載平均では、PattayaはStudio約461USD、1BR約702USD、2BR約1,374USD、"
+        "BangkokはStudio約489USD、1BR約771USD、2BR約1,605USDです。"
+    )
 
 util = st.slider(
     "光熱・通信費（THB）",
