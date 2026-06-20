@@ -509,14 +509,54 @@ def render_comments(comment_list: list[str]):
 st.write("")
 st.divider()
 st.header("STEP 2　試算方法を選ぶ")
+st.write("どちらの試算方法でも、基本条件・住まい固定費・医療保険料は反映されます。")
 st.write("")
-method = st.radio(
-    "試算方法",
-    ["生活から試算する", "予算から試算する"],
-    label_visibility="collapsed",
-    horizontal=True,
-    key="method",
+
+if "method" not in st.session_state:
+    st.session_state["method"] = "生活から試算する"
+
+st.markdown(
+    """
+    <style>
+    [class*="st-key-mode_tile_"] button {
+        height: auto;
+        min-height: 3.2rem;
+        padding: 0.85rem 1rem;
+        white-space: normal;
+        line-height: 1.4;
+        font-weight: 600;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
+
+MODE_TILES = [
+    (
+        "生活から試算する",
+        "入力した暮らし方を積み上げて、月々いくら必要かを見ます。",
+    ),
+    (
+        "予算から試算する",
+        "月額予算を自分で決めて、入力済みの固定費を反映しながら生活バランスを見ます。",
+    ),
+]
+
+mode_cols = st.columns(2)
+for mode_col, (tile_title, tile_desc) in zip(mode_cols, MODE_TILES):
+    with mode_col:
+        is_selected = st.session_state["method"] == tile_title
+        if st.button(
+            tile_title,
+            key=f"mode_tile_{tile_title}",
+            width="stretch",
+            type="primary" if is_selected else "secondary",
+        ):
+            st.session_state["method"] = tile_title
+            st.rerun()
+        st.caption(tile_desc)
+
+method = st.session_state["method"]
 
 
 # ===========================================================================
