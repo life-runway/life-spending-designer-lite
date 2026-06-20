@@ -125,8 +125,14 @@ st.subheader("基本条件")
 b1, b2 = st.columns(2)
 with b1:
     age = st.slider(
-        "年齢", data.AGE_MIN, data.AGE_MAX, data.AGE_DEFAULT, data.AGE_STEP, key="age"
+        "移住開始時の年齢",
+        data.AGE_MIN,
+        data.AGE_MAX,
+        data.AGE_DEFAULT,
+        data.AGE_STEP,
+        key="age",
     )
+    st.caption("医療保険費の目安に反映されます。")
 with b2:
     fx_rate = st.slider(
         "為替レート（1THBあたり円）",
