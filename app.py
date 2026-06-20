@@ -353,10 +353,35 @@ else:  # 自分で入力する
 st.caption(data.INSURANCE_NOTE)
 
 with st.expander("医療保険料の参考テーブルを見る"):
-    for line in data.INSURANCE_REFERENCE_INTRO:
+    insurance_reference_intro = getattr(
+        data,
+        "INSURANCE_REFERENCE_INTRO",
+        [
+            "医療保険料は、Pacific Crossの保険料表を参考にした概算です。",
+            "このアプリでは、Premier Plusを基準に医療保険料の目安を反映しています。",
+            "参考として、Premier / Premier Plus / Maxima の年齢別年間保険料を表示しています。",
+        ],
+    )
+    insurance_reference_table = getattr(
+        data,
+        "INSURANCE_REFERENCE_TABLE",
+        [
+            {"年齢": "51〜55歳", "Premier": 44115, "Premier Plus": 63975, "Maxima": 74289},
+            {"年齢": "56〜60歳", "Premier": 50651, "Premier Plus": 73452, "Maxima": 85249},
+            {"年齢": "61〜65歳", "Premier": 60455, "Premier Plus": 87669, "Maxima": 101801},
+            {"年齢": "66〜70歳", "Premier": 83328, "Premier Plus": 120843, "Maxima": 140322},
+            {"年齢": "71〜75歳", "Premier": 124173, "Premier Plus": 180075, "Maxima": 209103},
+            {"年齢": "76〜80歳", "Premier": 166654, "Premier Plus": 241683, "Maxima": 280636},
+            {"年齢": "81〜85歳", "Premier": 207500, "Premier Plus": 300917, "Maxima": 349420},
+            {"年齢": "86〜90歳", "Premier": 264477, "Premier Plus": 379106, "Maxima": 440216},
+            {"年齢": "91〜95歳", "Premier": 333199, "Premier Plus": 483205, "Maxima": 561093},
+            {"年齢": "96〜99歳", "Premier": 419779, "Premier Plus": 608764, "Maxima": 706889},
+        ],
+    )
+    for line in insurance_reference_intro:
         st.write(line)
     st.caption("単位：THB/年")
-    insurance_ref_df = pd.DataFrame(data.INSURANCE_REFERENCE_TABLE)
+    insurance_ref_df = pd.DataFrame(insurance_reference_table)
     for col in ("Premier", "Premier Plus", "Maxima"):
         insurance_ref_df[col] = insurance_ref_df[col].map("{:,}".format)
     st.dataframe(insurance_ref_df, hide_index=True)
