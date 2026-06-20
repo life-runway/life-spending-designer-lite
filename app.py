@@ -570,7 +570,7 @@ st.write("")
 
 def show_lifestyle_result():
     st.subheader("生活から試算する")
-    st.write("希望する生活スタイルを積み上げると、月いくら必要かを試算します。")
+    st.write("これまでに選んだ暮らし方を積み上げて、必要な月額生活費と生活バランスを見ます。")
 
     result = simulator.simulate_from_lifestyle(
         fixed_costs=fixed_costs,
