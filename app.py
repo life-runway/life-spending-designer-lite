@@ -100,23 +100,26 @@ def slider_with_steppers(
 
     st.slider(label, min_value=min_value, max_value=max_value, step=step, key=key)
 
-    minus_col, plus_col = st.columns(2)
-    minus_col.button(
-        "−",
-        key=f"{key}__minus",
-        width="stretch",
-        on_click=_step_session_value,
-        args=(key, -step, min_value, max_value, decimals),
-        help=f"{step} 下げる",
-    )
-    plus_col.button(
-        "＋",
-        key=f"{key}__plus",
-        width="stretch",
-        on_click=_step_session_value,
-        args=(key, step, min_value, max_value, decimals),
-        help=f"{step} 上げる",
-    )
+    # −／＋ は横並び1行（左に−、右に＋）。
+    # st.columns はスマホ幅で縦積みになるため、横方向コンテナ＋専用CSSで
+    # 横並びを固定する。CSSは下記の st-key-stepper_ クラスにのみ効く（他UIに影響しない）。
+    with st.container(key=f"stepper_{key}", horizontal=True):
+        st.button(
+            "−",
+            key=f"{key}__minus",
+            width="stretch",
+            on_click=_step_session_value,
+            args=(key, -step, min_value, max_value, decimals),
+            help=f"{step} 下げる",
+        )
+        st.button(
+            "＋",
+            key=f"{key}__plus",
+            width="stretch",
+            on_click=_step_session_value,
+            args=(key, step, min_value, max_value, decimals),
+            help=f"{step} 上げる",
+        )
     return st.session_state[key]
 
 
@@ -128,6 +131,32 @@ st.write(
     "月いくらで、どんなタイ生活になるのか。"
     "車や医療保険を入れると何が変わるのか。"
     "生活費の中身とバランスを見える化する生活設計ツールです。"
+)
+
+# −／＋ステッパー専用CSS。st-key-stepper_ で始まるコンテナ内だけに適用し、
+# スマホ幅でも横並び1行を維持する（他のボタン・レイアウトには影響しない）。
+st.markdown(
+    """
+    <style>
+    [class*="st-key-stepper_"] {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+    }
+    [class*="st-key-stepper_"] > div {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    /* ステッパーボタンだけ高さを約20〜25%コンパクトに（横幅・等幅は維持） */
+    [class*="st-key-stepper_"] button {
+        min-height: 0 !important;
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
+        line-height: 1.2 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 
@@ -171,18 +200,18 @@ spacer()
 st.subheader("基本条件")
 b1, b2 = st.columns(2)
 with b1:
-    age = st.slider(
+    age = slider_with_steppers(
         "移住開始時の年齢",
-        data.AGE_MIN,
-        data.AGE_MAX,
-        data.AGE_DEFAULT,
-        data.AGE_STEP,
+        min_value=data.AGE_MIN,
+        max_value=data.AGE_MAX,
+        default=data.AGE_DEFAULT,
+        step=data.AGE_STEP,
         key="age",
     )
-    # 年齢スライダーの直下に近づけて表示し、為替レートとの間に余白を空ける
+    # 補足文はスライダー＋−／＋ボタン全体にかかる説明なのでボタンの下に置く
     st.markdown(
         "<div style='font-size:0.85rem; color:#888; "
-        "margin-top:-0.6rem; margin-bottom:1.4rem;'>"
+        "margin-top:0.2rem; margin-bottom:1.4rem;'>"
         "※ この年齢をもとに、医療保険費の目安を調整します。"
         "</div>",
         unsafe_allow_html=True,
@@ -261,33 +290,33 @@ with st.expander("部屋タイプと家賃の目安を見る"):
         "BangkokはStudio約489USD、1BR約771USD、2BR約1,605USDです。"
     )
 
-util = st.slider(
+util = slider_with_steppers(
     "光熱・通信費（THB）",
-    data.UTIL_MIN,
-    data.UTIL_MAX,
-    data.UTIL_DEFAULT,
-    data.UTIL_STEP,
+    min_value=data.UTIL_MIN,
+    max_value=data.UTIL_MAX,
+    default=data.UTIL_DEFAULT,
+    step=data.UTIL_STEP,
     key="util",
 )
 st.caption("電気代・水道代・Wi-Fi・携帯通信費をまとめた概算です。")
 st.caption(data.UTIL_NOTE)
 
-visa = st.slider(
+visa = slider_with_steppers(
     "ビザ・滞在関連費（THB）",
-    data.VISA_MIN,
-    data.VISA_MAX,
-    data.VISA_DEFAULT,
-    data.VISA_STEP,
+    min_value=data.VISA_MIN,
+    max_value=data.VISA_MAX,
+    default=data.VISA_DEFAULT,
+    step=data.VISA_STEP,
     key="visa",
 )
 st.caption("滞在延長、リエントリーパーミット、書類取得などを月割りした概算です。")
 
-other = st.slider(
+other = slider_with_steppers(
     "その他固定費（THB）",
-    data.OTHER_MIN,
-    data.OTHER_MAX,
-    data.OTHER_DEFAULT,
-    data.OTHER_STEP,
+    min_value=data.OTHER_MIN,
+    max_value=data.OTHER_MAX,
+    default=data.OTHER_DEFAULT,
+    step=data.OTHER_STEP,
     key="other",
 )
 st.caption("住居保険、サブスク、日本側で残る固定費など、毎月ほぼ決まって出る費用です。")
@@ -311,12 +340,12 @@ elif insurance_choice == "入らない":
     st.caption("医療保険料は0THBとして計算します。")
 else:  # 自分で入力する
     insurance_thb = float(
-        st.slider(
+        slider_with_steppers(
             "医療保険料（THB）",
-            data.CUSTOM_INS_MIN,
-            data.CUSTOM_INS_MAX,
-            int(default_insurance),
-            data.CUSTOM_INS_STEP,
+            min_value=data.CUSTOM_INS_MIN,
+            max_value=data.CUSTOM_INS_MAX,
+            default=int(default_insurance),
+            step=data.CUSTOM_INS_STEP,
             key="custom_insurance",
         )
     )
@@ -335,11 +364,21 @@ vehicle_choice = st.radio(
 st.caption("車・バイク維持費は、生活スタイルとは別に加算します。")
 
 with st.expander("車・バイクの詳細設定"):
-    motorbike_cost = st.slider(
-        "バイク維持費（THB）", 0, 10000, data.VEHICLE_DEFAULT_MOTORBIKE, 500, key="motorbike_cost"
+    motorbike_cost = slider_with_steppers(
+        "バイク維持費（THB）",
+        min_value=0,
+        max_value=10000,
+        default=data.VEHICLE_DEFAULT_MOTORBIKE,
+        step=500,
+        key="motorbike_cost",
     )
-    car_cost = st.slider(
-        "車維持費（THB）", 0, 30000, data.VEHICLE_DEFAULT_CAR, 500, key="car_cost"
+    car_cost = slider_with_steppers(
+        "車維持費（THB）",
+        min_value=0,
+        max_value=30000,
+        default=data.VEHICLE_DEFAULT_CAR,
+        step=500,
+        key="car_cost",
     )
 
 if vehicle_choice == "なし":
