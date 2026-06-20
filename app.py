@@ -436,8 +436,9 @@ RADAR_CHART_CONFIG = {
 
 
 def render_balance_section(scores: dict):
-    """生活バランス：横幅いっぱいの大きめレーダーチャート。"""
+    """生活バランス：説明文＋横幅いっぱいの大きめレーダーチャート。"""
     st.markdown("#### 生活バランス")
+    st.write(charts.RADAR_BALANCE_DESCRIPTION)
     fig = charts.make_radar_chart(scores, theme=current_theme_type())
     st.plotly_chart(fig, width="stretch", config=RADAR_CHART_CONFIG)
 
