@@ -77,8 +77,6 @@ def fmt_amount(value: float) -> str:
 # ヘッダー（装飾アイコンは使わない）
 # ---------------------------------------------------------------------------
 st.title(data.APP_TITLE)
-if data.APP_SUBTITLE:
-    st.caption(data.APP_SUBTITLE)
 st.write(
     "月いくらで、どんなタイ生活になるのか。"
     "車や医療保険を入れると何が変わるのか。"
