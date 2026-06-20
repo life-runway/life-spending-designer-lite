@@ -634,8 +634,9 @@ def show_lifestyle_result():
 def show_budget_result():
     st.subheader("予算から試算する")
     st.write(
-        "月額予算から固定・準固定費を先に差し引き、残りを日常生活費に配分します。"
-        "予算を無理に使い切らず、余りは予備費として残します。"
+        "想定する月額予算を入力してください。  \n"
+        "住まい・医療保険料などを差し引いたうえで、残りを日常生活費に配分し、"
+        "余りは予備費として残します。"
     )
 
     budget_jpy = slider_with_steppers(
