@@ -352,6 +352,15 @@ else:  # 自分で入力する
     has_insurance = insurance_thb > 0
 st.caption(data.INSURANCE_NOTE)
 
+with st.expander("医療保険料の参考テーブルを見る"):
+    for line in data.INSURANCE_REFERENCE_INTRO:
+        st.write(line)
+    st.caption("単位：THB/年")
+    insurance_ref_df = pd.DataFrame(data.INSURANCE_REFERENCE_TABLE)
+    for col in ("Premier", "Premier Plus", "Maxima"):
+        insurance_ref_df[col] = insurance_ref_df[col].map("{:,}".format)
+    st.dataframe(insurance_ref_df, hide_index=True)
+
 spacer()
 
 # --- 移動手段 ---
