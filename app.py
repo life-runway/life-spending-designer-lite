@@ -495,12 +495,20 @@ def render_radar_guide_section():
     st.caption(charts.RADAR_NOTE)
 
 
-def render_comments(comment_list: list[str]):
-    if not comment_list:
-        return
-    st.subheader("結果の分析")
-    for c in comment_list:
-        st.info(c)
+def render_comments(comment_result: dict):
+    analysis = comment_result.get("analysis", [])
+    advice = comment_result.get("advice")
+    memo = comment_result.get("lifestyle_memo")
+
+    if analysis:
+        st.subheader("結果の分析")
+        st.info("\n\n".join(analysis))
+    if advice:
+        st.subheader("一言アドバイス")
+        st.info(advice)
+    if memo:
+        st.subheader("生活スタイルのメモ")
+        st.info(memo)
 
 
 # ===========================================================================

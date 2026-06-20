@@ -1,115 +1,167 @@
 """結果コメント生成ロジック。
 
 「判定」ではなく「入力条件に基づく説明」を返す方針。
-生活スタイル、固定費比率、予算充足状況、医療保険・車・最小生活などの
-注意点に応じて、表示するコメント文字列のリストを組み立てる。
+結果コメントは以下の3つの役割に分けて生成する。
+
+- analysis（結果の分析）：入力条件・計算結果から見た現在の状態
+- advice（一言アドバイス）：次にどこを調整すればよいかの短い助言
+- lifestyle_memo（生活スタイルのメモ）：選んだ生活スタイルへの一般的な補足
+
+移動手段（なし／バイクあり／車あり／車＋バイクあり）や医療保険の有無に
+合わせて文言が自然に変わるようにし、入力内容と矛盾する一般論を避ける。
 """
 
-# 医療保険なしコメント
+# 医療保険なしの補足（結果の分析に含める）
 NO_INSURANCE_COMMENT = (
     "医療保険なしの場合、月額生活費は抑えられますが、"
     "入院・手術・高額医療費への備えは別途必要です。"
 )
 
-# 車ありコメント（予算充足・予備費の状況で出し分ける）
-CAR_COMMENT_SHORTAGE = (
-    "車を持つことで生活圏は広がりますが、車・バイク維持費は毎月の固定的な"
-    "支出になります。同じ予算内では、外食・交際・趣味・レジャーに回せる余力が"
-    "小さくなります。"
-)
-CAR_COMMENT_LOW_RESERVE = (
-    "車を持つことで生活圏は広がりますが、車・バイク維持費は毎月の固定的な"
-    "支出になります。生活費は確保できていますが、予備費や為替変動への余力も"
-    "あわせて確認しておくと安心です。"
-)
-CAR_COMMENT_COMFORTABLE = (
-    "車を持つことで生活圏は広がり、移動の自由度は高くなります。"
-    "生活費と予備費の両方を確保できており、車のある生活も比較的無理なく"
-    "想定できます。"
-)
-CAR_COMMENT_LIFESTYLE = (
-    "車を持つことで生活圏は広がり、移動の自由度は高くなります。車・バイク維持費は"
-    "毎月の固定的な支出になるため、固定費の重さもあわせて確認してください。"
-)
-
-# 「予算から試算」モード専用の最小生活コメント。
-# 予算モードでは lifestyle_style_comment を出さないため、ここで最小生活の注意を補う。
-# 趣旨は LIFESTYLE_STYLE_COMMENTS["最小生活"] と近いが、両者は同時に表示されない
-# （lifestyle モードは下の LIFESTYLE_STYLE_COMMENTS、budget モードはこの定数を使う）。
-MINIMAL_COMMENT = (
-    "最小生活は、かなり支出を抑えた条件です。長期滞在では医療費、"
-    "帰国費用、家電故障、為替変動などへの余力に注意が必要です。"
-)
-
-# 生活スタイル別の説明コメント（「生活から試算」モードで使用）。
-# budget モードでは使わず、代わりに budget_fit_comment / MINIMAL_COMMENT を使う。
-LIFESTYLE_STYLE_COMMENTS = {
+# 生活スタイル別のメモ（モードに依らず常に表示）
+LIFESTYLE_MEMOS = {
     "最小生活": (
-        "かなり支出を抑えた生活設計です。外食・交際・趣味に回せる金額は限られるため、"
-        "長期滞在では医療費、帰国費用、家電故障、為替変動などへの余力に"
-        "注意が必要です。"
+        "最小生活は、かなり支出を抑えた条件です。長期滞在では医療費、"
+        "帰国費用、家電故障、為替変動などへの余力に注意が必要です。"
     ),
     "控えめ生活": (
-        "基礎的な生活費を抑えながら、外食・交際・趣味を少し残す生活設計です。"
-        "大きな余裕はありませんが、車や医療保険の有無、家賃水準によって"
-        "現実性が変わります。"
+        "控えめ生活は、基礎生活を保ちながら支出を抑える条件です。"
+        "無理なく続けるには、外食・交際・趣味の余白をどこまで残すか"
+        "確認するとよいでしょう。"
     ),
     "標準生活": (
-        "食費・外食・交際・趣味をある程度残した、無理の少ない生活設計です。"
+        "標準生活は、食費・外食・交際・趣味をある程度残す条件です。"
+        "長期滞在では、生活の楽しみと固定費のバランスを確認するとよいでしょう。"
     ),
     "余裕生活": (
-        "外食・交際・趣味・レジャーにも余白を持たせた生活設計です。"
-        "生活の楽しみは残しやすい一方、家賃・医療保険・車などの固定費が"
-        "大きい場合は、総額が高くなります。"
+        "余裕生活は、外食・交際・趣味・レジャーにも余白を持たせる条件です。"
+        "支出が大きくなりやすいため、住まい・移動手段・医療保険との"
+        "バランスを確認するとよいでしょう。"
     ),
 }
 
 
-def lifestyle_style_comment(style: str) -> str:
-    """選んだ生活スタイルに対する説明コメントを返す。"""
-    return LIFESTYLE_STYLE_COMMENTS.get(
-        style, "入力条件に基づいて生活費を試算しています。"
-    )
+def lifestyle_memo(style: str) -> str:
+    """選んだ生活スタイルに対する補足メモを返す。"""
+    return LIFESTYLE_MEMOS.get(style, "")
 
 
-def fixed_ratio_comment(fixed_ratio: float) -> str:
-    """固定・準固定費の比重についての説明コメントを返す。"""
-    if fixed_ratio < 40:
-        return (
-            "家賃・医療保険・車などの固定的な支出は比較的抑えられています。"
-            "生活費を調整する余地は、外食・交際・趣味などの日常生活費側に"
-            "残っています。"
-        )
-    if fixed_ratio < 60:
-        return (
-            f"固定的な支出は生活費全体の{fixed_ratio:.0f}%です。"
-            "生活費を下げたい場合は、外食・交際・趣味だけでなく、"
-            "家賃や移動手段の前提も確認すると効果が見えやすくなります。"
-        )
-    return (
-        f"家賃・医療保険・車などの固定的な支出が生活費全体の{fixed_ratio:.0f}%を"
-        "占め、比重は高めです。毎月の総額を下げたい場合、外食や趣味を削るだけでは"
-        "限界があり、住居費や車の有無を見直す方が効果が大きくなります。"
-    )
+def _fixed_items_phrase(vehicle_choice: str, has_insurance: bool) -> str:
+    """固定的な支出の主な内訳を、入力内容に合わせた語句で返す。"""
+    items = ["住まい"]
+    if has_insurance:
+        items.append("医療保険")
+    if vehicle_choice == "車あり":
+        items.append("車の維持費")
+    elif vehicle_choice == "車＋バイクあり":
+        items.append("車とバイクの維持費")
+    elif vehicle_choice == "バイクあり":
+        items.append("バイク維持費")
+    return "・".join(items) + "などの固定的な支出"
 
 
-def budget_fit_comment(fulfillment_ratio: float) -> str:
-    """予算に対する充足状況の説明コメントを返す。"""
-    if fulfillment_ratio >= 1.0:
+def _adjustable_phrase(vehicle_choice: str, has_insurance: bool) -> str:
+    """見直し候補になりやすい固定費の語句を、入力内容に合わせて返す。"""
+    base = "家賃・医療保険" if has_insurance else "家賃"
+    if vehicle_choice in ("車あり", "車＋バイクあり"):
+        return base + "や車の維持費"
+    return base
+
+
+def analysis_lead(
+    *,
+    mode: str,
+    vehicle_choice: str,
+    has_insurance: bool,
+    fixed_ratio: float | None,
+    fulfillment_ratio: float | None,
+) -> str:
+    """結果の分析の先頭に置く、固定費と日常生活費の状況説明を返す。"""
+    fixed_phrase = _fixed_items_phrase(vehicle_choice, has_insurance)
+
+    if mode == "budget" and fulfillment_ratio is not None:
+        if fulfillment_ratio < 0.75:
+            return (
+                f"月額予算に対して、{fixed_phrase}が大きく、"
+                "外食・交際・趣味に回せる金額はかなり限られています。"
+            )
+        if fulfillment_ratio < 1.0:
+            return (
+                f"月額予算に対して、{fixed_phrase}を確保すると、"
+                "外食・交際・趣味は少し抑える必要があります。"
+            )
         return (
-            "選択した生活スタイルに必要な支出をおおむね確保できています。"
-            "余った金額は、突発費や帰国費用、為替変動への備えとして残せます。"
+            f"月額予算に対して、{fixed_phrase}を確保したうえで、"
+            "外食・交際・趣味にも回せています。"
         )
-    if fulfillment_ratio >= 0.75:
+
+    if fixed_ratio is not None:
+        if fixed_ratio >= 60:
+            return (
+                f"選んだ条件では、{fixed_phrase}が生活費全体の"
+                f"{fixed_ratio:.0f}%を占め、比重は高めです。"
+            )
+        if fixed_ratio >= 40:
+            return (
+                f"選んだ条件では、{fixed_phrase}が生活費全体の"
+                f"約{fixed_ratio:.0f}%を占めています。"
+            )
         return (
-            "選択した生活スタイルにかなり近い内容まで確保できますが、"
-            "一部の外食・交際・趣味は少し抑える必要があります。"
+            f"選んだ条件では、{fixed_phrase}は比較的抑えられており、"
+            "調整の余地は外食・交際・趣味などの日常生活費側に残っています。"
         )
-    return (
-        "固定費と基礎生活費を優先すると、外食・交際・趣味に回せる金額は"
-        "かなり限られます。家賃、医療保険、車の有無を見直すと、"
-        "生活費全体への影響が大きくなります。"
-    )
+
+    return "入力した条件をもとに生活費を試算しています。"
+
+
+def advice_comment(
+    *,
+    mode: str,
+    vehicle_choice: str,
+    has_insurance: bool,
+    fixed_ratio: float | None,
+    fulfillment_ratio: float | None,
+) -> str:
+    """次にどこを調整すればよいかの短い助言を返す。"""
+    adjust = _adjustable_phrase(vehicle_choice, has_insurance)
+
+    if mode == "budget" and fulfillment_ratio is not None:
+        if fulfillment_ratio < 0.75:
+            return (
+                f"この条件では、{adjust}の条件を見直すか、"
+                "月額予算を少し上げられるかを確認するとよいでしょう。"
+            )
+        if fulfillment_ratio < 1.0:
+            return (
+                f"あと少し余裕を持たせたい場合は、{adjust}の条件か"
+                "月額予算を確認するとよいでしょう。"
+            )
+        return (
+            "余った分は、予備費や帰国費用、為替変動への備えとして"
+            "残しておくと安心です。"
+        )
+
+    if fixed_ratio is not None:
+        if fixed_ratio >= 60:
+            return (
+                f"毎月の総額を下げたい場合は、{adjust}の前提を見直すと"
+                "効果が見えやすくなります。"
+            )
+        if fixed_ratio >= 40:
+            if vehicle_choice in ("車あり", "車＋バイクあり"):
+                return (
+                    "生活費を抑えたい場合は、外食・交際・趣味に加えて、"
+                    "家賃や車の前提も確認するとよいでしょう。"
+                )
+            return (
+                "生活費を抑えたい場合は、外食・交際・趣味や家賃の前提を"
+                "確認するとよいでしょう。"
+            )
+        return (
+            "余白を増やしたい場合は、外食・交際・趣味の予算を"
+            "少しずつ調整するとよいでしょう。"
+        )
+
+    return "気になる費目から、入力条件を少しずつ調整してみてください。"
 
 
 # 五角形（レーダー）の結果と連動したコメント
@@ -203,23 +255,6 @@ def reserve_stability_comment(
     return STABILITY_NOT_FULL_COMMENT
 
 
-def car_comment(
-    *,
-    mode: str,
-    fulfillment_ratio: float | None,
-    reserve_jpy: float | None,
-    monthly_jpy: float | None,
-) -> str:
-    """車あり時のコメントを、予算充足状況・予備費に応じて出し分ける。"""
-    if mode == "budget" and fulfillment_ratio is not None:
-        if fulfillment_ratio < 1.0:
-            return CAR_COMMENT_SHORTAGE
-        if reserve_is_small(reserve_jpy, monthly_jpy):
-            return CAR_COMMENT_LOW_RESERVE
-        return CAR_COMMENT_COMFORTABLE
-    return CAR_COMMENT_LIFESTYLE
-
-
 def build_comments(
     *,
     mode: str,
@@ -231,22 +266,20 @@ def build_comments(
     scores: dict | None = None,
     reserve_jpy: float | None = None,
     monthly_jpy: float | None = None,
-) -> list[str]:
-    """表示するコメントのリストを返す。"""
-    comments: list[str] = []
+) -> dict:
+    """結果コメントを「結果の分析・一言アドバイス・生活スタイルのメモ」に分けて返す。"""
+    analysis: list[str] = [
+        analysis_lead(
+            mode=mode,
+            vehicle_choice=vehicle_choice,
+            has_insurance=has_insurance,
+            fixed_ratio=fixed_ratio,
+            fulfillment_ratio=fulfillment_ratio,
+        )
+    ]
 
-    if mode == "lifestyle":
-        comments.append(lifestyle_style_comment(style))
-        if fixed_ratio is not None:
-            comments.append(fixed_ratio_comment(fixed_ratio))
-    else:
-        if fulfillment_ratio is not None:
-            comments.append(budget_fit_comment(fulfillment_ratio))
-
-    low_comments: list[str] = []
-    if scores is not None:
-        low_comments = score_low_comments(scores)
-        comments.extend(low_comments)
+    low_comments = score_low_comments(scores) if scores is not None else []
+    analysis.extend(low_comments)
 
     reserve_stab = None
     if (
@@ -259,7 +292,7 @@ def build_comments(
             scores.get("Stability", 100.0), reserve_jpy, monthly_jpy
         )
         if reserve_stab is not None:
-            comments.append(reserve_stab)
+            analysis.append(reserve_stab)
 
     budget_enough = mode != "budget" or (
         fulfillment_ratio is not None and fulfillment_ratio >= 1.0
@@ -271,22 +304,21 @@ def build_comments(
         and budget_enough
         and is_balanced(scores)
     ):
-        comments.append(BALANCED_COMMENT)
+        analysis.append(BALANCED_COMMENT)
 
     if not has_insurance:
-        comments.append(NO_INSURANCE_COMMENT)
+        analysis.append(NO_INSURANCE_COMMENT)
 
-    if vehicle_choice in ("車あり", "車＋バイクあり"):
-        comments.append(
-            car_comment(
-                mode=mode,
-                fulfillment_ratio=fulfillment_ratio,
-                reserve_jpy=reserve_jpy,
-                monthly_jpy=monthly_jpy,
-            )
-        )
+    advice = advice_comment(
+        mode=mode,
+        vehicle_choice=vehicle_choice,
+        has_insurance=has_insurance,
+        fixed_ratio=fixed_ratio,
+        fulfillment_ratio=fulfillment_ratio,
+    )
 
-    if style == "最小生活" and mode == "budget":
-        comments.append(MINIMAL_COMMENT)
-
-    return comments
+    return {
+        "analysis": analysis,
+        "advice": advice,
+        "lifestyle_memo": lifestyle_memo(style),
+    }
