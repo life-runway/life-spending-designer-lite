@@ -1,4 +1,4 @@
-"""タイ移住生活費シミュレーター by Life Runway
+"""タイ移住生活費シミュレーター
 
 Streamlit 画面本体。共通条件をメイン画面上部（STEP 1）で入力し、
 STEP 2 で試算方法を選び、STEP 3 で選んだ方法の結果のみを表示する
@@ -77,11 +77,12 @@ def fmt_amount(value: float) -> str:
 # ヘッダー（装飾アイコンは使わない）
 # ---------------------------------------------------------------------------
 st.title(data.APP_TITLE)
-st.caption(data.APP_SUBTITLE)
+if data.APP_SUBTITLE:
+    st.caption(data.APP_SUBTITLE)
 st.write(
     "月いくらで、どんなタイ生活になるのか。"
     "車や医療保険を入れると何が変わるのか。"
-    "生活費の中身とバランスを見える化する、Life Runway の生活設計ツールです。"
+    "生活費の中身とバランスを見える化する生活設計ツールです。"
 )
 
 
