@@ -73,6 +73,53 @@ def fmt_amount(value: float) -> str:
     return f"{round(value):,}"
 
 
+def _step_session_value(key: str, delta: float, lo: float, hi: float, decimals: int):
+    """−／＋ボタン用コールバック。step単位で増減し min/max でクランプする。"""
+    new_value = st.session_state[key] + delta
+    new_value = max(lo, min(hi, new_value))
+    st.session_state[key] = round(new_value, decimals) if decimals else int(round(new_value))
+
+
+def slider_with_steppers(
+    label: str,
+    *,
+    min_value,
+    max_value,
+    default,
+    step,
+    key: str,
+    decimals: int = 0,
+):
+    """スライダー＋直下の−／＋ボタン。スマホでも微調整しやすくする。
+
+    値は st.session_state[key] で一元管理し、スライダーとボタンが同期する。
+    計算ロジックには影響せず、返り値は従来のスライダーと同じ現在値。
+    """
+    if key not in st.session_state:
+        st.session_state[key] = default
+
+    st.slider(label, min_value=min_value, max_value=max_value, step=step, key=key)
+
+    minus_col, plus_col = st.columns(2)
+    minus_col.button(
+        "−",
+        key=f"{key}__minus",
+        width="stretch",
+        on_click=_step_session_value,
+        args=(key, -step, min_value, max_value, decimals),
+        help=f"{step} 下げる",
+    )
+    plus_col.button(
+        "＋",
+        key=f"{key}__plus",
+        width="stretch",
+        on_click=_step_session_value,
+        args=(key, step, min_value, max_value, decimals),
+        help=f"{step} 上げる",
+    )
+    return st.session_state[key]
+
+
 # ---------------------------------------------------------------------------
 # ヘッダー（装飾アイコンは使わない）
 # ---------------------------------------------------------------------------
@@ -132,27 +179,35 @@ with b1:
         data.AGE_STEP,
         key="age",
     )
-    st.caption("医療保険費の目安に反映されます。")
+    # 年齢スライダーの直下に近づけて表示し、為替レートとの間に余白を空ける
+    st.markdown(
+        "<div style='font-size:0.85rem; color:#888; "
+        "margin-top:-0.6rem; margin-bottom:1.4rem;'>"
+        "※ この年齢をもとに、医療保険費の目安を調整します。"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 with b2:
-    fx_rate = st.slider(
+    fx_rate = slider_with_steppers(
         "為替レート（1THBあたり円）",
-        data.FX_MIN,
-        data.FX_MAX,
-        data.FX_DEFAULT,
-        data.FX_STEP,
+        min_value=data.FX_MIN,
+        max_value=data.FX_MAX,
+        default=data.FX_DEFAULT,
+        step=data.FX_STEP,
         key="fx_rate",
+        decimals=1,
     )
 
 spacer()
 
 # --- 住まい・固定費：金額スライダーは横幅いっぱい（1列）で操作しやすく ---
 st.subheader("住まい・固定費")
-rent = st.slider(
+rent = slider_with_steppers(
     "家賃・管理費（THB）",
-    data.RENT_MIN,
-    data.RENT_MAX,
-    data.RENT_DEFAULT,
-    data.RENT_STEP,
+    min_value=data.RENT_MIN,
+    max_value=data.RENT_MAX,
+    default=data.RENT_DEFAULT,
+    step=data.RENT_STEP,
     key="rent",
 )
 st.caption("賃貸は家賃、購入済みコンドミニアムは管理費を入力してください。")
@@ -469,12 +524,12 @@ def show_budget_result():
         "予算を無理に使い切らず、余りは予備費として残します。"
     )
 
-    budget_jpy = st.slider(
+    budget_jpy = slider_with_steppers(
         "月額予算（円）",
-        data.BUDGET_MIN,
-        data.BUDGET_MAX,
-        data.BUDGET_DEFAULT,
-        data.BUDGET_STEP,
+        min_value=data.BUDGET_MIN,
+        max_value=data.BUDGET_MAX,
+        default=data.BUDGET_DEFAULT,
+        step=data.BUDGET_STEP,
         key="budget_jpy",
     )
 
