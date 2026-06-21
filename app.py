@@ -747,3 +747,7 @@ if method == "生活から試算する":
     show_lifestyle_result()
 else:
     show_budget_result()
+
+
+# デプロイ確認用の一時マーカー（公開環境が最新コミットを配信しているかの切り分け用）
+st.caption("build: 2026-06-21 / 57c4481")
