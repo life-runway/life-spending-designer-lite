@@ -133,8 +133,8 @@ st.write(
     "生活費の中身とバランスを見える化する生活設計ツールです。"
 )
 st.markdown(
-    f"[{data.ASSET_SIM_NAME}]({data.ASSET_SIM_URL})を使う前に、"
-    "海外生活中の月額生活費の目安をつかむためにも利用できます。"
+    f"[{data.ASSET_SIM_NAME}]({data.ASSET_SIM_URL})で必要になる、"
+    "海外生活中の月額生活費の目安づくりにも使えます。"
 )
 
 # −／＋ステッパー専用CSS。st-key-stepper_ で始まるコンテナ内だけに適用し、
