@@ -481,11 +481,11 @@ vehicle_choice = st.radio(
     list(data.VEHICLE_COSTS.keys()),
     key="vehicle_choice",
 )
-st.caption("車・バイク維持費は、生活スタイルとは別に加算します。")
 
 # 選択した移動手段に関係する入力欄だけを表示する。非表示の維持費は合計に
 # 加算しない（誤解防止）。表示しないだけで session_state は壊さないため、
 # 再表示時はスタイル連動の初期値・手入力値がそのまま復元される。
+# 「なし」のときは共通説明文（別に加算）も出さず、加算されない旨だけを示す。
 show_motorbike = vehicle_choice in ("バイクあり", "車＋バイクあり")
 show_car = vehicle_choice in ("車あり", "車＋バイクあり")
 
@@ -495,6 +495,7 @@ if vehicle_choice == "なし":
     vehicle_thb = 0.0
     st.caption("車・バイク維持費は加算されません。")
 else:
+    st.caption("車・バイク維持費は、生活スタイルとは別に加算します。")
     with st.expander("車・バイクの詳細設定"):
         if show_motorbike:
             motorbike_cost = slider_with_steppers(
