@@ -5,6 +5,7 @@ STEP 2 で試算方法を選び、STEP 3 で選んだ方法の結果のみを表
 1ページ内ステップ式の動線。
 """
 
+import inspect
 from pathlib import Path
 
 import pandas as pd
@@ -455,6 +456,20 @@ def render_fixed_table(fixed: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _vehicle_choice_kwarg(fn, choice: str) -> dict:
+    """fn が vehicle_choice を受け取れる場合のみ {'vehicle_choice': choice} を返す。
+
+    公開環境で app.py と simulator.py の反映タイミングにズレが出ても、
+    古い simulator.py に未知のキーワード引数を渡して TypeError で落ちないようにする。
+    """
+    try:
+        if "vehicle_choice" in inspect.signature(fn).parameters:
+            return {"vehicle_choice": choice}
+    except (TypeError, ValueError):
+        pass
+    return {}
+
+
 def current_theme_type() -> str:
     """現在のテーマ種別（"light"/"dark"）を返す。取得できなければ "light"。"""
     try:
@@ -592,7 +607,7 @@ def show_lifestyle_result():
         insurance_thb=insurance_thb,
         out_of_pocket_thb=out_of_pocket,
         vehicle_thb=vehicle_thb,
-        vehicle_choice=vehicle_choice,
+        **_vehicle_choice_kwarg(simulator.simulate_from_lifestyle, vehicle_choice),
     )
 
     c1, c2 = st.columns(2)
@@ -675,7 +690,7 @@ def show_budget_result():
         insurance_thb=insurance_thb,
         out_of_pocket_thb=out_of_pocket,
         vehicle_thb=vehicle_thb,
-        vehicle_choice=vehicle_choice,
+        **_vehicle_choice_kwarg(simulator.simulate_from_budget, vehicle_choice),
     )
 
     row1_left, row1_right = st.columns(2)
