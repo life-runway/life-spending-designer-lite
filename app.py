@@ -170,7 +170,7 @@ st.markdown(
 st.write("")
 st.divider()
 st.header("STEP 1　共通条件を入力する")
-st.write("ここで入力した条件は、どちらの試算方法でも共通して使われます。")
+st.write("ここでは、生活費を試算するための前提条件を入力してください。")
 st.write("")
 
 
