@@ -153,6 +153,27 @@ def style_linked_default(key: str, style: str, by_style: dict):
     return st.session_state[key]
 
 
+def persistent_style_linked_default(key: str, style: str, by_style: dict):
+    """style_linked_default に、表示/非表示をまたぐ値の永続化を足したもの。
+
+    Streamlit はウィジェットが描画されない（アンマウントされる）と、その
+    session_state を破棄する。移動手段の切替で入力欄を出し入れすると、
+    手入力値が失われてしまうため、非ウィジェットのシャドーキーへ控えておき、
+    再表示時に復元する。これにより「表示しないだけ」で値を保持できる。
+    描画する側は、スライダー生成後に save_persistent_value() を呼ぶこと。
+    """
+    shadow = f"_persist_{key}"
+    if key not in st.session_state and shadow in st.session_state:
+        st.session_state[key] = st.session_state[shadow]
+    return style_linked_default(key, style, by_style)
+
+
+def save_persistent_value(key: str):
+    """スライダー描画後に現在値をシャドーキーへ控える（再表示時の復元用）。"""
+    if key in st.session_state:
+        st.session_state[f"_persist_{key}"] = st.session_state[key]
+
+
 # ---------------------------------------------------------------------------
 # ヘッダー（装飾アイコンは使わない）
 # ---------------------------------------------------------------------------
@@ -462,36 +483,45 @@ vehicle_choice = st.radio(
 )
 st.caption("車・バイク維持費は、生活スタイルとは別に加算します。")
 
-with st.expander("車・バイクの詳細設定"):
-    motorbike_cost = slider_with_steppers(
-        "バイク維持費（THB）",
-        min_value=0,
-        max_value=10000,
-        default=style_linked_default(
-            "motorbike_cost", style, data.MOTORBIKE_BY_STYLE
-        ),
-        step=500,
-        key="motorbike_cost",
-    )
-    car_cost = slider_with_steppers(
-        "車維持費（THB）",
-        min_value=0,
-        max_value=30000,
-        default=style_linked_default("car_cost", style, data.CAR_BY_STYLE),
-        step=500,
-        key="car_cost",
-    )
+# 選択した移動手段に関係する入力欄だけを表示する。非表示の維持費は合計に
+# 加算しない（誤解防止）。表示しないだけで session_state は壊さないため、
+# 再表示時はスタイル連動の初期値・手入力値がそのまま復元される。
+show_motorbike = vehicle_choice in ("バイクあり", "車＋バイクあり")
+show_car = vehicle_choice in ("車あり", "車＋バイクあり")
 
+motorbike_cost = 0
+car_cost = 0
 if vehicle_choice == "なし":
     vehicle_thb = 0.0
-elif vehicle_choice == "バイクあり":
-    vehicle_thb = float(motorbike_cost)
-elif vehicle_choice == "車あり":
-    vehicle_thb = float(car_cost)
-else:  # 車＋バイクあり
-    vehicle_thb = float(car_cost + motorbike_cost)
-
-st.caption(data.VEHICLE_NOTE)
+    st.caption("車・バイク維持費は加算されません。")
+else:
+    with st.expander("車・バイクの詳細設定"):
+        if show_motorbike:
+            motorbike_cost = slider_with_steppers(
+                "バイク維持費（THB）",
+                min_value=0,
+                max_value=10000,
+                default=persistent_style_linked_default(
+                    "motorbike_cost", style, data.MOTORBIKE_BY_STYLE
+                ),
+                step=500,
+                key="motorbike_cost",
+            )
+            save_persistent_value("motorbike_cost")
+        if show_car:
+            car_cost = slider_with_steppers(
+                "車維持費（THB）",
+                min_value=0,
+                max_value=30000,
+                default=persistent_style_linked_default(
+                    "car_cost", style, data.CAR_BY_STYLE
+                ),
+                step=500,
+                key="car_cost",
+            )
+            save_persistent_value("car_cost")
+        st.caption(data.VEHICLE_NOTE)
+    vehicle_thb = float(motorbike_cost + car_cost)
 
 
 # 固定・準固定費を構築（両方の試算で共通利用）
