@@ -744,8 +744,8 @@ def show_budget_result():
                 {
                     "費目": data.CATEGORY_LABELS[k],
                     "配分額(THB)": fmt_amount(bresult["allocated"][k]),
-                    "希望額(THB)": fmt_amount(bresult["desired"][k]),
-                    "希望との差分(THB)": fmt_amount(bresult["diff_by_category"][k]),
+                    "基準額(THB)": fmt_amount(bresult["desired"][k]),
+                    "基準との差分(THB)": fmt_amount(bresult["diff_by_category"][k]),
                 }
             )
         st.dataframe(pd.DataFrame(alloc_rows), hide_index=True, width="stretch")
