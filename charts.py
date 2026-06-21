@@ -42,26 +42,29 @@ RADAR_DESCRIPTIONS = {
 }
 
 
+# レーダーチャートはテーマに追随させず、独立した固定の見た目にする。
+# ライト／ダークのどちらかで文字が沈む問題を避けるため、文字色・グリッド色・
+# 背景色を固定する（ダーク系背景＋明るい固定文字色）。app.py 側で
+# var(--text-color) による文字色上書き CSS を当てないこと。
+RADAR_TEXT_COLOR = "#E5E7EB"
+RADAR_GRID_COLOR = "rgba(156, 163, 175, 0.45)"
+RADAR_BG_COLOR = "rgba(17, 24, 39, 0.85)"
+
+
 def make_radar_chart(scores: dict, theme: str | None = None) -> go.Figure:
     """5指標スコア（0〜100）からレーダーチャートを作成する。
 
-    文字色は Plotly のテンプレート任せにせず、app.py 側の CSS
-    （SVG text に fill: var(--text-color)）で Streamlit のライト／ダーク
-    切替に追随させる。そのため、ここではラベル・目盛りの色を指定しない。
-
-    グリッド・軸線は、ライト／ダークどちらでも見える中間グレーで固定する。
+    Streamlit のテーマには追随させず、ダーク系の固定背景＋明るい固定文字色で
+    描画する。ライト／ダークのどちらでも、項目名・目盛りが必ず読める。
     theme 引数は後方互換のため残しているが、配色には使用しない。
     """
     values = [float(scores.get(axis, 0)) for axis in RADAR_AXES]
     r = values + [values[0]]
     theta = RADAR_AXES + [RADAR_AXES[0]]
 
-    # 線・塗りは両テーマ共通（暗背景・明背景どちらでも視認できるブルー）
-    line_color = "#3B82F6"
-    fill_color = "rgba(59, 130, 246, 0.25)"
-    # グリッド・軸線は両テーマで見える中間グレー
-    grid_color = "rgba(128, 128, 128, 0.35)"
-    axis_line_color = "rgba(128, 128, 128, 0.45)"
+    # 線・塗りは固定のダーク背景上で映えるブルー
+    line_color = "#60A5FA"
+    fill_color = "rgba(96, 165, 250, 0.30)"
 
     fig = go.Figure()
     fig.add_trace(
@@ -76,29 +79,28 @@ def make_radar_chart(scores: dict, theme: str | None = None) -> go.Figure:
         )
     )
     fig.update_layout(
-        # 文字色は CSS（var(--text-color)）に委ねるため size のみ指定
-        font=dict(size=13),
+        paper_bgcolor=RADAR_BG_COLOR,
+        plot_bgcolor=RADAR_BG_COLOR,
+        font=dict(color=RADAR_TEXT_COLOR, size=13),
         polar=dict(
             # 外周ラベル用の余白を確保しつつ、チャート本体は大きめに表示
             domain=dict(x=[0.14, 0.86], y=[0.14, 0.86]),
-            bgcolor="rgba(0,0,0,0)",
+            bgcolor=RADAR_BG_COLOR,
             radialaxis=dict(
                 visible=True,
                 range=[0, 100],
                 tickvals=[20, 40, 60, 80, 100],
-                tickfont=dict(size=11),
-                gridcolor=grid_color,
-                linecolor=axis_line_color,
+                tickfont=dict(color=RADAR_TEXT_COLOR, size=11),
+                gridcolor=RADAR_GRID_COLOR,
+                linecolor=RADAR_GRID_COLOR,
             ),
             angularaxis=dict(
-                tickfont=dict(size=12),
-                gridcolor=grid_color,
-                linecolor=axis_line_color,
+                tickfont=dict(color=RADAR_TEXT_COLOR, size=12),
+                gridcolor=RADAR_GRID_COLOR,
+                linecolor=RADAR_GRID_COLOR,
             ),
         ),
         showlegend=False,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=90, r=90, t=80, b=70),
         height=500,
         autosize=True,

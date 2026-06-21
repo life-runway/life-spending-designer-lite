@@ -164,27 +164,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# レーダーチャートの文字色を Plotly テンプレート任せにせず、Streamlit の
-# ライト／ダーク切替に追随させる。SVG テキストを var(--text-color) で塗る
-# ことで、どちらのテーマでも軸ラベル・目盛りが背景に溶けず読める。
-st.markdown(
-    """
-    <style>
-    div[data-testid="stPlotlyChart"] svg text {
-        fill: var(--text-color) !important;
-    }
-
-    div[data-testid="stPlotlyChart"] .xtick text,
-    div[data-testid="stPlotlyChart"] .ytick text,
-    div[data-testid="stPlotlyChart"] .angularaxistick text,
-    div[data-testid="stPlotlyChart"] .radialaxistick text {
-        fill: var(--text-color) !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 
 # ===========================================================================
 # STEP 1：共通条件を入力する
