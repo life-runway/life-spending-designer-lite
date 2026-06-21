@@ -22,7 +22,7 @@ FIXED_LABELS = [
 
 
 def build_fixed_costs(
-    age: int,
+    style: str,
     rent: float,
     util: float,
     insurance_thb: float,
@@ -32,9 +32,9 @@ def build_fixed_costs(
 ) -> dict:
     """固定・準固定費の内訳（THB／月）を返す。
 
-    医療費自己負担は年齢から自動設定する。
+    医療費自己負担は生活スタイルに応じた初期値を設定する。
     """
-    out_of_pocket = data.get_medical_out_of_pocket(age)
+    out_of_pocket = data.get_medical_out_of_pocket(style)
     return {
         "家賃・管理費": float(rent),
         "光熱・通信費": float(util),

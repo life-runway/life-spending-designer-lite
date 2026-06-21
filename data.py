@@ -26,16 +26,16 @@ MEDICAL_INSURANCE_MONTHLY_THB = {
 }
 
 # ---------------------------------------------------------------------------
-# 年齢別の医療費自己負担（月額・THB）
-# 通院、薬、検査、歯科などの概算。年齢から自動設定する。
+# 生活スタイル別の医療費自己負担（月額・THB）。
+# 保険対象外の通院・薬代・簡単な検査・歯科眼科の自己負担・予防医療などを
+# 月割りした概算。病気リスクの違いではなく、医療費への予備費をどこまで
+# 厚く見るかの違いとして、生活スタイルに応じた初期値を設定する。
 # ---------------------------------------------------------------------------
-MEDICAL_OUT_OF_POCKET_MONTHLY_THB = {
-    (50, 59): 2000,
-    (60, 64): 3000,
-    (65, 69): 4000,
-    (70, 74): 5000,
-    (75, 79): 7000,
-    (80, 85): 10000,
+MEDICAL_OUT_OF_POCKET_BY_STYLE = {
+    "最小生活": 1000,
+    "控えめ生活": 1500,
+    "標準生活": 2000,
+    "余裕生活": 3000,
 }
 
 # ---------------------------------------------------------------------------
@@ -233,6 +233,6 @@ def get_medical_insurance(age: int) -> int:
     return _lookup_range_table(MEDICAL_INSURANCE_MONTHLY_THB, age)
 
 
-def get_medical_out_of_pocket(age: int) -> int:
-    """年齢別の医療費自己負担（月額THB）を返す。"""
-    return _lookup_range_table(MEDICAL_OUT_OF_POCKET_MONTHLY_THB, age)
+def get_medical_out_of_pocket(style: str) -> int:
+    """生活スタイル別の医療費自己負担（月額THB）の初期値を返す。"""
+    return MEDICAL_OUT_OF_POCKET_BY_STYLE.get(style, 2000)

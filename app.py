@@ -433,10 +433,10 @@ st.caption(data.VEHICLE_NOTE)
 
 
 # 固定・準固定費を構築（両方の試算で共通利用）
-# 医療費自己負担は build_fixed_costs が年齢から内部算出するため、
+# 医療費自己負担は build_fixed_costs が生活スタイルから内部算出するため、
 # その結果を再利用して二重 lookup を避ける。
 fixed_costs = simulator.build_fixed_costs(
-    age=age,
+    style=style,
     rent=rent,
     util=util,
     insurance_thb=insurance_thb,
