@@ -475,6 +475,7 @@ def render_balance_section(scores: dict):
     st.write(charts.RADAR_BALANCE_DESCRIPTION)
     fig = charts.make_radar_chart(scores, theme=current_theme_type())
     st.plotly_chart(fig, width="stretch", config=RADAR_CHART_CONFIG)
+    st.caption(charts.RADAR_NOTE)
 
 
 def render_radar_guide_section():
@@ -492,7 +493,6 @@ def render_radar_guide_section():
 
     st.write("")
     st.caption(charts.RADAR_BALANCE_NOTE)
-    st.caption(charts.RADAR_NOTE)
 
 
 def render_comments(comment_result: dict):
