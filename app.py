@@ -164,6 +164,29 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# レーダーチャートは固定のダーク配色（charts.py 側で指定）。ライトモードでも
+# 「不具合でダーク背景が残っている」ように見えないよう、このチャートだけを
+# 意図的な分析カードとして角丸・余白・薄い枠線で囲む。st-key-radar_card に
+# 限定するため、他の Plotly チャートや表には影響しない。
+st.markdown(
+    """
+    <style>
+    .st-key-radar_card {
+        background: rgba(17, 24, 39, 0.85);
+        border: 1px solid rgba(156, 163, 175, 0.25);
+        border-radius: 16px;
+        padding: 0.75rem 0.75rem 0.25rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    }
+    .st-key-radar_card div[data-testid="stPlotlyChart"] {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ===========================================================================
 # STEP 1：共通条件を入力する
@@ -493,7 +516,10 @@ def render_balance_section(scores: dict):
     st.markdown("#### 生活バランス")
     st.write(charts.RADAR_BALANCE_DESCRIPTION)
     fig = charts.make_radar_chart(scores, theme=current_theme_type())
-    st.plotly_chart(fig, width="stretch", config=RADAR_CHART_CONFIG)
+    # キー付きコンテナで囲み、このチャートだけを「分析カード」として装飾する
+    # （他の Plotly チャートや表には影響しないようスコープを限定）。
+    with st.container(key="radar_card"):
+        st.plotly_chart(fig, width="stretch", config=RADAR_CHART_CONFIG)
     st.caption(charts.RADAR_NOTE)
 
 
