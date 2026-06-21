@@ -45,9 +45,12 @@ RADAR_DESCRIPTIONS = {
 def make_radar_chart(scores: dict, theme: str | None = None) -> go.Figure:
     """5指標スコア（0〜100）からレーダーチャートを作成する。
 
-    theme: "dark" でダークテーマ向けの白系、それ以外（"light"/None）は
-        ライトテーマ向けの濃いグレー系の配色を使う。線・塗りは両テーマで
-        視認できるブルーで共通。
+    文字色は Plotly のテンプレート任せにせず、app.py 側の CSS
+    （SVG text に fill: var(--text-color)）で Streamlit のライト／ダーク
+    切替に追随させる。そのため、ここではラベル・目盛りの色を指定しない。
+
+    グリッド・軸線は、ライト／ダークどちらでも見える中間グレーで固定する。
+    theme 引数は後方互換のため残しているが、配色には使用しない。
     """
     values = [float(scores.get(axis, 0)) for axis in RADAR_AXES]
     r = values + [values[0]]
@@ -56,21 +59,9 @@ def make_radar_chart(scores: dict, theme: str | None = None) -> go.Figure:
     # 線・塗りは両テーマ共通（暗背景・明背景どちらでも視認できるブルー）
     line_color = "#3B82F6"
     fill_color = "rgba(59, 130, 246, 0.25)"
-
-    if theme == "dark":
-        # ダークテーマ：白系でラベル・目盛り・グリッドを浮かせる
-        grid_color = "rgba(255, 255, 255, 0.25)"
-        angular_grid_color = "rgba(255, 255, 255, 0.22)"
-        axis_line_color = "rgba(255, 255, 255, 0.35)"
-        tick_font_color = "rgba(255, 255, 255, 0.75)"
-        label_font_color = "rgba(255, 255, 255, 0.85)"
-    else:
-        # ライトテーマ：濃いグレー系（白背景で読める）
-        grid_color = "rgba(0, 0, 0, 0.18)"
-        angular_grid_color = "rgba(0, 0, 0, 0.15)"
-        axis_line_color = "rgba(0, 0, 0, 0.28)"
-        tick_font_color = "rgba(0, 0, 0, 0.65)"
-        label_font_color = "rgba(0, 0, 0, 0.80)"
+    # グリッド・軸線は両テーマで見える中間グレー
+    grid_color = "rgba(128, 128, 128, 0.35)"
+    axis_line_color = "rgba(128, 128, 128, 0.45)"
 
     fig = go.Figure()
     fig.add_trace(
@@ -85,7 +76,8 @@ def make_radar_chart(scores: dict, theme: str | None = None) -> go.Figure:
         )
     )
     fig.update_layout(
-        font=dict(color=label_font_color),
+        # 文字色は CSS（var(--text-color)）に委ねるため size のみ指定
+        font=dict(size=13),
         polar=dict(
             # 外周ラベル用の余白を確保しつつ、チャート本体は大きめに表示
             domain=dict(x=[0.14, 0.86], y=[0.14, 0.86]),
@@ -94,14 +86,14 @@ def make_radar_chart(scores: dict, theme: str | None = None) -> go.Figure:
                 visible=True,
                 range=[0, 100],
                 tickvals=[20, 40, 60, 80, 100],
+                tickfont=dict(size=11),
                 gridcolor=grid_color,
                 linecolor=axis_line_color,
-                tickfont=dict(size=12, color=tick_font_color),
             ),
             angularaxis=dict(
-                gridcolor=angular_grid_color,
+                tickfont=dict(size=12),
+                gridcolor=grid_color,
                 linecolor=axis_line_color,
-                tickfont=dict(size=13, color=label_font_color),
             ),
         ),
         showlegend=False,
