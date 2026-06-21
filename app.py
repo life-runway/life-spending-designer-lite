@@ -1,4 +1,4 @@
-"""タイ移住生活費シミュレーター
+"""タイ移住 月額生活費シミュレーター
 
 Streamlit 画面本体。共通条件をメイン画面上部（STEP 1）で入力し、
 STEP 2 で試算方法を選び、STEP 3 で選んだ方法の結果のみを表示する
@@ -131,6 +131,10 @@ st.write(
     "月いくらで、どんなタイ生活になるのか。"
     "車や医療保険を入れると何が変わるのか。"
     "生活費の中身とバランスを見える化する生活設計ツールです。"
+)
+st.write(
+    f"{data.ASSET_SIM_NAME}を使う前に、"
+    "海外生活中の月額生活費の目安をつかむためにも利用できます。"
 )
 
 # −／＋ステッパー専用CSS。st-key-stepper_ で始まるコンテナ内だけに適用し、
@@ -594,6 +598,12 @@ def show_lifestyle_result():
     c1.metric("月額生活費（円）", jpy(result["monthly_jpy"]))
     c2.metric("月額生活費（THB）", thb(result["monthly_thb"]))
 
+    st.caption(
+        f"この月額生活費は、「{data.ASSET_SIM_NAME}」で資産寿命を試算するときの"
+        "入力目安として使えます。"
+    )
+    st.markdown(f"{data.ASSET_SIM_NAME}：[{data.ASSET_SIM_URL}]({data.ASSET_SIM_URL})")
+
     st.write("")
 
     render_balance_section(result["scores"])
@@ -747,7 +757,3 @@ if method == "生活から試算する":
     show_lifestyle_result()
 else:
     show_budget_result()
-
-
-# デプロイ確認用の一時マーカー（公開環境が最新コミットを配信しているかの切り分け用）
-st.caption("build: 2026-06-21 / 57c4481")
