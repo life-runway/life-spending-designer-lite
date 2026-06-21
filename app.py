@@ -124,6 +124,35 @@ def slider_with_steppers(
     return st.session_state[key]
 
 
+def style_linked_default(key: str, style: str, by_style: dict):
+    """生活スタイル連動の初期値・推奨値を返す（ユーザー入力項目向け）。
+
+    方針：
+    - 初回はそのスタイルの推奨値を初期値にする。
+    - 2回目以降は、ユーザーが手入力で変えた値を保持する。
+    - ただし、現在値が「前スタイルの推奨値のまま」（＝ユーザー未編集とみなせる）
+      なら、生活スタイル変更時に新スタイルの推奨値へ追随させる。
+
+    これにより「生活スタイル選択時の初期値」を実現しつつ、ユーザーが
+    手で変えた値を勝手にリセットしない。値は強制固定しない。
+    必ず該当ウィジェット生成前に呼ぶこと（session_state を事前調整するため）。
+    """
+    fallback = next(iter(by_style.values()))
+    rec = by_style.get(style, fallback)
+    marker = f"_stylelink_{key}"
+    if key not in st.session_state:
+        # 初回。slider_with_steppers 側で session_state[key]=rec が設定される。
+        st.session_state[marker] = style
+        return rec
+    prev_style = st.session_state.get(marker, style)
+    if prev_style != style:
+        prev_rec = by_style.get(prev_style)
+        if st.session_state[key] == prev_rec:
+            st.session_state[key] = rec
+        st.session_state[marker] = style
+    return st.session_state[key]
+
+
 # ---------------------------------------------------------------------------
 # ヘッダー（装飾アイコンは使わない）
 # ---------------------------------------------------------------------------
@@ -322,7 +351,7 @@ util = slider_with_steppers(
     "光熱・通信費（THB）",
     min_value=data.UTIL_MIN,
     max_value=data.UTIL_MAX,
-    default=data.UTIL_DEFAULT,
+    default=style_linked_default("util", style, data.UTIL_BY_STYLE),
     step=data.UTIL_STEP,
     key="util",
 )
@@ -343,7 +372,7 @@ other = slider_with_steppers(
     "その他固定費（THB）",
     min_value=data.OTHER_MIN,
     max_value=data.OTHER_MAX,
-    default=data.OTHER_DEFAULT,
+    default=style_linked_default("other", style, data.OTHER_BY_STYLE),
     step=data.OTHER_STEP,
     key="other",
 )
@@ -356,12 +385,20 @@ st.subheader("医療")
 insurance_choice = st.radio(
     "医療保険", data.INSURANCE_CHOICES, key="insurance_choice"
 )
-default_insurance = data.get_medical_insurance(age)
+# 生活スタイル別のデフォルトプラン（Premier / Premier Plus / Maxima）で
+# 概算保険料を出す。古いデプロイ（data.py 未更新）でも落ちないよう getattr で
+# 後方互換フォールバックする。
+if hasattr(data, "get_medical_insurance_by_style"):
+    default_insurance = data.get_medical_insurance_by_style(age, style)
+    plan_name = data.get_insurance_plan_for_style(style)
+else:  # フォールバック：従来の Premier Plus 基準
+    default_insurance = data.get_medical_insurance(age)
+    plan_name = "Premier Plus"
 
 if insurance_choice == "医療保険に入る":
     insurance_thb = float(default_insurance)
     has_insurance = True
-    st.info(f"年齢帯の概算保険料：{thb(insurance_thb)} / 月")
+    st.info(f"年齢帯の概算保険料（{plan_name}プラン）：{thb(insurance_thb)} / 月")
 elif insurance_choice == "入らない":
     insurance_thb = 0.0
     has_insurance = False
@@ -430,7 +467,9 @@ with st.expander("車・バイクの詳細設定"):
         "バイク維持費（THB）",
         min_value=0,
         max_value=10000,
-        default=data.VEHICLE_DEFAULT_MOTORBIKE,
+        default=style_linked_default(
+            "motorbike_cost", style, data.MOTORBIKE_BY_STYLE
+        ),
         step=500,
         key="motorbike_cost",
     )
@@ -438,7 +477,7 @@ with st.expander("車・バイクの詳細設定"):
         "車維持費（THB）",
         min_value=0,
         max_value=30000,
-        default=data.VEHICLE_DEFAULT_CAR,
+        default=style_linked_default("car_cost", style, data.CAR_BY_STYLE),
         step=500,
         key="car_cost",
     )
