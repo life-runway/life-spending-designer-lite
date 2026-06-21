@@ -592,6 +592,7 @@ def show_lifestyle_result():
         insurance_thb=insurance_thb,
         out_of_pocket_thb=out_of_pocket,
         vehicle_thb=vehicle_thb,
+        vehicle_choice=vehicle_choice,
     )
 
     c1, c2 = st.columns(2)
@@ -674,6 +675,7 @@ def show_budget_result():
         insurance_thb=insurance_thb,
         out_of_pocket_thb=out_of_pocket,
         vehicle_thb=vehicle_thb,
+        vehicle_choice=vehicle_choice,
     )
 
     row1_left, row1_right = st.columns(2)

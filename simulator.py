@@ -53,6 +53,29 @@ def _fulfillment(realized: float, desired: float) -> float:
     return max(0.0, min(realized / desired, 1.0))
 
 
+def adjusted_transport(base_transport: float, vehicle_choice: str) -> float:
+    """移動手段に応じて日常生活費側の交通費を減額する。
+
+    車・バイク維持費は固定費側に別途計上されるため、車・バイクを持つほど
+    日常側の交通費を下げる。ただしゼロにはせず、車・バイクありの場合は
+    最低 TRANSPORT_MIN_WITH_VEHICLE_THB を残す。
+    """
+    factor = data.VEHICLE_TRANSPORT_FACTOR.get(vehicle_choice, 1.0)
+    if factor >= 1.0:
+        return base_transport
+    return float(max(data.TRANSPORT_MIN_WITH_VEHICLE_THB, round(base_transport * factor)))
+
+
+def _preset_with_transport(style: str, vehicle_choice: str) -> dict:
+    """生活スタイルのプリセットを取得し、交通費を移動手段で調整した dict を返す。"""
+    desired = dict(data.LIFESTYLE_PRESETS[style])
+    if "local_transport" in desired:
+        desired["local_transport"] = adjusted_transport(
+            desired["local_transport"], vehicle_choice
+        )
+    return desired
+
+
 def compute_scores(
     desired: dict,
     realized: dict,
@@ -156,12 +179,13 @@ def simulate_from_lifestyle(
     insurance_thb: float,
     out_of_pocket_thb: float,
     vehicle_thb: float,
+    vehicle_choice: str = "なし",
 ) -> dict:
     """生活から試算するモード。
 
     希望する生活スタイルを積み上げて月額生活費を算出する。
     """
-    desired = dict(data.LIFESTYLE_PRESETS[style])
+    desired = _preset_with_transport(style, vehicle_choice)
     daily_total = sum(desired.values())
     fixed_total = sum(fixed_costs.values())
     monthly_thb = fixed_total + daily_total
@@ -273,13 +297,14 @@ def simulate_from_budget(
     insurance_thb: float,
     out_of_pocket_thb: float,
     vehicle_thb: float,
+    vehicle_choice: str = "なし",
 ) -> dict:
     """予算から試算するモード。
 
     月額予算から固定・準固定費を先に差し引き、残りを日常生活費に配分する。
     予算を無理に使い切らず、余剰は予備費として残す。
     """
-    desired = dict(data.LIFESTYLE_PRESETS[style])
+    desired = _preset_with_transport(style, vehicle_choice)
     desired_total = sum(desired.values())
     fixed_total = sum(fixed_costs.values())
 
