@@ -132,8 +132,8 @@ st.write(
     "車や医療保険を入れると何が変わるのか。"
     "生活費の中身とバランスを見える化する生活設計ツールです。"
 )
-st.write(
-    f"{data.ASSET_SIM_NAME}を使う前に、"
+st.markdown(
+    f"[{data.ASSET_SIM_NAME}]({data.ASSET_SIM_URL})を使う前に、"
     "海外生活中の月額生活費の目安をつかむためにも利用できます。"
 )
 
@@ -599,10 +599,9 @@ def show_lifestyle_result():
     c2.metric("月額生活費（THB）", thb(result["monthly_thb"]))
 
     st.caption(
-        f"この月額生活費は、「{data.ASSET_SIM_NAME}」で資産寿命を試算するときの"
-        "入力目安として使えます。"
+        f"この月額生活費は、「[{data.ASSET_SIM_NAME}]({data.ASSET_SIM_URL})」で"
+        "資産寿命を試算するときの入力目安として使えます。"
     )
-    st.markdown(f"{data.ASSET_SIM_NAME}：[{data.ASSET_SIM_URL}]({data.ASSET_SIM_URL})")
 
     st.write("")
 
