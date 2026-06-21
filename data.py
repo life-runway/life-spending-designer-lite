@@ -7,7 +7,7 @@ Streamlit や計算ロジックには依存しません。
 APP_TITLE = "タイ移住 月額生活費シミュレーター"
 
 # 連携先アプリ（資産寿命の試算ツール）
-ASSET_SIM_NAME = "海外移住 資産寿命シミュレーター"
+ASSET_SIM_NAME = "海外移住 資産寿命シミュレーター（簡易版）"
 ASSET_SIM_URL = "https://life-runway-lite-liferunway.streamlit.app/"
 
 # ---------------------------------------------------------------------------
