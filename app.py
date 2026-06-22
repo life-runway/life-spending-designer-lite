@@ -425,6 +425,17 @@ elif insurance_choice == "入らない":
     has_insurance = False
     st.caption("医療保険料は0THBとして計算します。")
 else:  # 自分で入力する
+    # 手入力した保険料は、選択肢を切り替えてウィジェットが非表示になっても保持する。
+    # Streamlit はアンマウント時に session_state を破棄するため、シャドーキーへ
+    # 控えた値を再表示時に復元する（車・バイク維持費と同じ考え方）。
+    # スタイル連動はあえてさせず、ユーザーが明示入力した値を尊重する。
+    if (
+        "custom_insurance" not in st.session_state
+        and "_persist_custom_insurance" in st.session_state
+    ):
+        st.session_state["custom_insurance"] = st.session_state[
+            "_persist_custom_insurance"
+        ]
     insurance_thb = float(
         slider_with_steppers(
             "医療保険料（THB）",
@@ -435,6 +446,7 @@ else:  # 自分で入力する
             key="custom_insurance",
         )
     )
+    save_persistent_value("custom_insurance")
     has_insurance = insurance_thb > 0
 st.caption(data.INSURANCE_NOTE)
 
