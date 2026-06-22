@@ -50,12 +50,8 @@ def lifestyle_memo(style: str) -> str:
 
 # 生活から試算するモードの一言アドバイス（選んだ生活スタイルで実行可能な助言）。
 # ミニマム生活では「一段控えめにする」助言を出さず、固定費の見直しに誘導する。
+# ミニマム生活は医療保険の有無で文言を出し分けるため、_minimum_advice() で生成する。
 STYLE_ADVICE = {
-    "ミニマム生活": (
-        "ミニマム生活は、すでに日常生活費をかなり抑えた前提です。"
-        "さらに月額生活費を抑えたい場合は、家賃・管理費、医療保険、"
-        "光熱・通信費などの固定費を見直す必要があります。"
-    ),
     "節約生活": (
         "月額生活費をさらに抑えたい場合は、ミニマム生活との違いを確認しつつ、"
         "家賃・管理費などの固定費もあわせて見直すとよいでしょう。"
@@ -70,6 +66,21 @@ STYLE_ADVICE = {
         "確認するとよいでしょう。"
     ),
 }
+
+
+def _minimum_advice(has_insurance: bool) -> str:
+    """ミニマム生活の一言アドバイス。医療保険なしのときは「医療保険」を
+    見直し候補に含めない（選択条件と矛盾させないため）。"""
+    items = (
+        "家賃・管理費、医療保険、光熱・通信費"
+        if has_insurance
+        else "家賃・管理費、光熱・通信費"
+    )
+    return (
+        "ミニマム生活は、すでに日常生活費をかなり抑えた前提です。"
+        f"さらに月額生活費を抑えたい場合は、{items}などの固定費を"
+        "見直す必要があります。"
+    )
 
 
 def _fixed_items_phrase(vehicle_choice: str, has_insurance: bool) -> str:
@@ -183,6 +194,8 @@ def advice_comment(
         )
 
     # 生活から試算するモード：選んだ生活スタイルで実行可能な助言を返す。
+    if style == "ミニマム生活":
+        return _minimum_advice(has_insurance)
     return STYLE_ADVICE.get(style, STYLE_ADVICE["標準生活"])
 
 
@@ -198,13 +211,21 @@ STABILITY_LOW_COMMENT = (
     "突発費、帰国費用、為替変動への備えを別枠で持てるか確認すると、"
     "より安心感のある生活設計になります。"
 )
-MOBILITY_LOW_COMMENT = (
+MOBILITY_LOW_COMMENT_NO_VEHICLE = (
+    "移動に使える金額が限られているため、Mobility が低めに出ています。"
+    "外出頻度や交通費の前提を確認するとよいでしょう。"
+)
+MOBILITY_LOW_COMMENT_WITH_VEHICLE = (
     "移動に使える金額が限られているため、Mobility が低めに出ています。"
     "行動範囲を広げたい場合は、交通費や車・バイクの前提を確認してください。"
 )
-HEALTH_LOW_COMMENT = (
+HEALTH_LOW_COMMENT_WITH_INSURANCE = (
     "医療保険や医療費、食費に関わる支出が十分ではない可能性があります。"
     "長期滞在では、医療費や健康維持の余力を別途確認する必要があります。"
+)
+HEALTH_LOW_COMMENT_NO_INSURANCE = (
+    "健康面のスコアが低めです。医療費自己負担や、万一の医療費に備える余力を"
+    "確認してください。"
 )
 BALANCED_COMMENT = (
     "生活の土台を確保しながら、外食・交際・趣味にも一定の余力を残せています。"
@@ -222,19 +243,36 @@ STABILITY_NOT_FULL_COMMENT = (
 )
 
 
-def score_low_comments(scores: dict) -> list[str]:
-    """レーダーの五角形で「低め」に出ている領域の説明コメントを返す。"""
+def score_low_comments(
+    scores: dict,
+    *,
+    vehicle_choice: str = "なし",
+    has_insurance: bool = True,
+) -> list[str]:
+    """レーダーの五角形で「低め」に出ている領域の説明コメントを返す。
+
+    選択条件と矛盾しないよう、Health は医療保険の有無、Mobility は車・バイクの
+    有無に応じて文言を出し分ける（選んでいない費目の見直しはすすめない）。
+    """
     out: list[str] = []
     low = 50.0
 
     if scores.get("Health", 100) < low:
-        out.append(HEALTH_LOW_COMMENT)
+        out.append(
+            HEALTH_LOW_COMMENT_WITH_INSURANCE
+            if has_insurance
+            else HEALTH_LOW_COMMENT_NO_INSURANCE
+        )
     if scores.get("Life Satisfaction", 100) < low:
         out.append(LIFE_SATISFACTION_LOW_COMMENT)
     if scores.get("Stability", 100) < low:
         out.append(STABILITY_LOW_COMMENT)
     if scores.get("Mobility", 100) < low:
-        out.append(MOBILITY_LOW_COMMENT)
+        out.append(
+            MOBILITY_LOW_COMMENT_WITH_VEHICLE
+            if vehicle_choice != "なし"
+            else MOBILITY_LOW_COMMENT_NO_VEHICLE
+        )
 
     return out
 
@@ -300,7 +338,13 @@ def build_comments(
         )
     ]
 
-    low_comments = score_low_comments(scores) if scores is not None else []
+    low_comments = (
+        score_low_comments(
+            scores, vehicle_choice=vehicle_choice, has_insurance=has_insurance
+        )
+        if scores is not None
+        else []
+    )
     analysis.extend(low_comments)
 
     reserve_stab = None
