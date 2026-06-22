@@ -45,6 +45,30 @@ def lifestyle_memo(style: str) -> str:
     return LIFESTYLE_MEMOS.get(style, "")
 
 
+# 生活から試算するモードの一言アドバイス（選んだ生活スタイルで実行可能な助言）。
+# ミニマム生活では「一段控えめにする」助言を出さず、固定費の見直しに誘導する。
+STYLE_ADVICE = {
+    "ミニマム生活": (
+        "ミニマム生活では、すでに日常生活費をかなり抑えた前提です。"
+        "さらに月額生活費を抑えたい場合は、家賃・管理費、医療保険、"
+        "光熱・通信費などの固定費を見直す必要があります。"
+    ),
+    "節約生活": (
+        "月額生活費をさらに抑えたい場合は、ミニマム生活との違いを確認しつつ、"
+        "家賃・管理費などの固定費もあわせて見直すとよいでしょう。"
+    ),
+    "標準生活": (
+        "月額生活費を抑えたい場合は、節約生活にした場合の差額や、"
+        "家賃・管理費などの固定費を確認するとよいでしょう。"
+    ),
+    "余裕生活": (
+        "余裕生活は快適さを重視した前提です。月額生活費を抑えたい場合は、"
+        "標準生活や節約生活と比較して、外食・交際・趣味・移動手段の差額を"
+        "確認するとよいでしょう。"
+    ),
+}
+
+
 def _fixed_items_phrase(vehicle_choice: str, has_insurance: bool) -> str:
     """固定的な支出の主な内訳を、入力内容に合わせた語句で返す。"""
     items = ["住まい"]
@@ -118,10 +142,18 @@ def advice_comment(
     mode: str,
     vehicle_choice: str,
     has_insurance: bool,
+    style: str,
     fixed_ratio: float | None,
     fulfillment_ratio: float | None,
+    reserve_jpy: float | None = None,
+    monthly_jpy: float | None = None,
 ) -> str:
-    """次にどこを調整すればよいかの短い助言を返す。"""
+    """次にどこを調整すればよいかの短い助言を返す。
+
+    生活から試算するモードでは、選んだ生活スタイルで実行可能な助言を返す
+    （例：ミニマム生活では「一段控えめにする」とは言わない）。予算から試算
+    するモードでは、予算と必要生活費の関係に応じた助言を返す。
+    """
     adjust = _adjustable_phrase(vehicle_choice, has_insurance)
 
     if mode == "budget" and fulfillment_ratio is not None:
@@ -135,33 +167,20 @@ def advice_comment(
                 f"あと少し余裕を持たせたい場合は、{adjust}の条件か"
                 "月額予算を確認するとよいでしょう。"
             )
+        # 必要生活費は確保できている。余り（予備費）の大きさで助言を分ける。
+        if reserve_is_small(reserve_jpy, monthly_jpy):
+            return (
+                "予算と必要生活費がほぼ同じため、余りはわずかです。"
+                "突発的な医療費や帰国費用、為替変動などへの予備費を"
+                "別に確保できるか確認するとよいでしょう。"
+            )
         return (
             "余った分は、予備費や帰国費用、為替変動への備えとして"
             "残しておくと安心です。"
         )
 
-    if fixed_ratio is not None:
-        if fixed_ratio >= 60:
-            return (
-                f"毎月の総額を下げたい場合は、{adjust}の前提を見直すと"
-                "効果が見えやすくなります。"
-            )
-        if fixed_ratio >= 40:
-            if vehicle_choice in ("車あり", "車＋バイクあり"):
-                return (
-                    "月額生活費を抑えたい場合は、生活スタイルを一段控えめにするか、"
-                    "家賃や車の前提を見直すとよいでしょう。"
-                )
-            return (
-                "月額生活費を抑えたい場合は、生活スタイルを一段控えめにするか、"
-                "家賃の前提を見直すとよいでしょう。"
-            )
-        return (
-            "余白を増やしたい場合は、外食・交際・趣味の予算を"
-            "少しずつ調整するとよいでしょう。"
-        )
-
-    return "気になる費目から、入力条件を少しずつ調整してみてください。"
+    # 生活から試算するモード：選んだ生活スタイルで実行可能な助言を返す。
+    return STYLE_ADVICE.get(style, STYLE_ADVICE["標準生活"])
 
 
 # 五角形（レーダー）の結果と連動したコメント
@@ -313,8 +332,11 @@ def build_comments(
         mode=mode,
         vehicle_choice=vehicle_choice,
         has_insurance=has_insurance,
+        style=style,
         fixed_ratio=fixed_ratio,
         fulfillment_ratio=fulfillment_ratio,
+        reserve_jpy=reserve_jpy,
+        monthly_jpy=monthly_jpy,
     )
 
     return {
