@@ -259,11 +259,20 @@ st.write(
     "まず、想定する暮らし方を選んでください。"
     "この選択により、日常生活費の前提と、レーダーチャートの評価基準が変わります。"
 )
+# タイル表示では序列（低コスト→ゆとり重視）が伝わりにくいため、①〜④の番号で明示する。
+st.caption("①から④に進むほど、生活費と暮らしのゆとりが大きくなります。")
 # 生活スタイルはアプリ全体の前提になる最初の重要な選択なので、設定項目に見える
 # ラジオではなく、2列×2段のタイル型UIで直感的に選べるようにする。選択状態は
 # session_state["style"] で管理し、既存ロジック（style_linked_default 等）は無変更。
 # タイル内には日常生活費の金額を出さない（家賃・医療保険込みの月額生活費と誤解
 # されないようにするため）。詳しい説明はタイル下に選択中スタイル分だけ表示する。
+# 番号は表示上の補助で、内部キー（session_state["style"]・辞書キー）は素の名称のまま。
+LIFESTYLE_TILE_NUMBER = {
+    "ミニマム生活": "①",
+    "節約生活": "②",
+    "標準生活": "③",
+    "余裕生活": "④",
+}
 LIFESTYLE_TILE_SHORT = {
     "ミニマム生活": "自炊中心・支出控えめ",
     "節約生活": "基礎生活＋少しの余白",
@@ -321,8 +330,9 @@ with st.container(key="style_tiles"):
         for tile_col, name in zip(row_cols, style_names[row_start : row_start + 2]):
             with tile_col:
                 is_selected = st.session_state["style"] == name
+                numbered = f"{LIFESTYLE_TILE_NUMBER[name]} {name}"
                 st.button(
-                    f"✓ {name}" if is_selected else name,
+                    f"✓ {numbered}" if is_selected else numbered,
                     key=f"style_tile_{name}",
                     width="stretch",
                     type="primary" if is_selected else "secondary",
