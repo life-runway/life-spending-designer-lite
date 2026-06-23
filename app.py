@@ -259,12 +259,66 @@ st.write(
     "まず、想定する暮らし方を選んでください。"
     "この選択により、日常生活費の前提と、レーダーチャートの評価基準が変わります。"
 )
-style = st.radio(
-    "生活スタイル",
-    list(data.LIFESTYLE_PRESETS.keys()),
-    index=2,
-    key="style",
+# 生活スタイルはアプリ全体の前提になる最初の重要な選択なので、設定項目に見える
+# ラジオではなく、2列×2段のタイル型UIで直感的に選べるようにする。選択状態は
+# session_state["style"] で管理し、既存ロジック（style_linked_default 等）は無変更。
+# タイル内には日常生活費の金額を出さない（家賃・医療保険込みの月額生活費と誤解
+# されないようにするため）。詳しい説明はタイル下に選択中スタイル分だけ表示する。
+LIFESTYLE_TILE_SHORT = {
+    "ミニマム生活": "自炊中心・支出控えめ",
+    "節約生活": "基礎生活＋少しの余白",
+    "標準生活": "安定と楽しみのバランス",
+    "余裕生活": "快適さとゆとり重視",
+}
+
+if "style" not in st.session_state:
+    st.session_state["style"] = "標準生活"
+
+st.markdown(
+    """
+    <style>
+    [class*="st-key-style_tile_"] button {
+        height: auto;
+        min-height: 3.2rem;
+        padding: 0.85rem 1rem;
+        white-space: normal;
+        line-height: 1.4;
+        font-weight: 600;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
+
+def _select_style(name: str):
+    """生活スタイルタイル用 on_click。st.rerun() を使わずに選択を更新する。
+
+    スタイルタイルは固定費スライダー群より前にあるため、ボタン内で st.rerun()
+    を呼ぶと同一パスで下のウィジェットが描画されず、Streamlit がそれらの値を
+    破棄してしまう（手入力値がスタイル連動デフォルトに戻る）。on_click なら
+    再実行前に選択だけ更新し、全ウィジェットを毎回描画できるので値が保たれる。
+    """
+    st.session_state["style"] = name
+
+
+style_names = list(data.LIFESTYLE_PRESETS.keys())
+for row_start in range(0, len(style_names), 2):
+    row_cols = st.columns(2)
+    for tile_col, name in zip(row_cols, style_names[row_start : row_start + 2]):
+        with tile_col:
+            is_selected = st.session_state["style"] == name
+            st.button(
+                f"✓ {name}" if is_selected else name,
+                key=f"style_tile_{name}",
+                width="stretch",
+                type="primary" if is_selected else "secondary",
+                on_click=_select_style,
+                args=(name,),
+            )
+            st.caption(LIFESTYLE_TILE_SHORT[name])
+
+style = st.session_state["style"]
+st.write("")
 st.caption(f"{style}：{data.LIFESTYLE_DESCRIPTIONS[style]}")
 st.caption(data.LIFESTYLE_NOTE)
 
