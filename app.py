@@ -274,16 +274,29 @@ LIFESTYLE_TILE_SHORT = {
 if "style" not in st.session_state:
     st.session_state["style"] = "標準生活"
 
+# タイルボタンの体裁と、スマホでも2列×2段を維持するためのCSS。
+# st.columns は狭幅で1列に縦積みされるため、生活スタイルタイルを囲む
+# keyed コンテナ（.st-key-style_tiles）内の stHorizontalBlock だけ
+# 折り返しを止め、各カラムを50%幅に固定する（他のレイアウトには影響しない）。
 st.markdown(
     """
     <style>
     [class*="st-key-style_tile_"] button {
         height: auto;
         min-height: 3.2rem;
-        padding: 0.85rem 1rem;
+        padding: 0.7rem 0.6rem;
         white-space: normal;
         line-height: 1.4;
         font-weight: 600;
+    }
+    .st-key-style_tiles [data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+    }
+    .st-key-style_tiles [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+        flex: 1 1 0 !important;
+        width: 50% !important;
+        min-width: 0 !important;
     }
     </style>
     """,
@@ -302,20 +315,21 @@ def _select_style(name: str):
 
 
 style_names = list(data.LIFESTYLE_PRESETS.keys())
-for row_start in range(0, len(style_names), 2):
-    row_cols = st.columns(2)
-    for tile_col, name in zip(row_cols, style_names[row_start : row_start + 2]):
-        with tile_col:
-            is_selected = st.session_state["style"] == name
-            st.button(
-                f"✓ {name}" if is_selected else name,
-                key=f"style_tile_{name}",
-                width="stretch",
-                type="primary" if is_selected else "secondary",
-                on_click=_select_style,
-                args=(name,),
-            )
-            st.caption(LIFESTYLE_TILE_SHORT[name])
+with st.container(key="style_tiles"):
+    for row_start in range(0, len(style_names), 2):
+        row_cols = st.columns(2)
+        for tile_col, name in zip(row_cols, style_names[row_start : row_start + 2]):
+            with tile_col:
+                is_selected = st.session_state["style"] == name
+                st.button(
+                    f"✓ {name}" if is_selected else name,
+                    key=f"style_tile_{name}",
+                    width="stretch",
+                    type="primary" if is_selected else "secondary",
+                    on_click=_select_style,
+                    args=(name,),
+                )
+                st.caption(LIFESTYLE_TILE_SHORT[name])
 
 style = st.session_state["style"]
 st.write("")
